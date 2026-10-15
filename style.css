@@ -272,3 +272,22 @@ input.ymd { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 .dialog h3 { font-size: 13px; color: var(--muted); margin: 16px 0 8px; }
 .cal-head { flex-wrap: wrap; row-gap: 8px; }
 @media (max-width: 600px) { .cal-head h2 { min-width: 0; } }
+
+/* 진행 중인 업무 */
+.work-list li.work { display: block; padding: 10px 0; }
+.work-top { display: flex; align-items: center; gap: 8px; }
+.work-top .grow { white-space: normal; font-weight: 500; }
+.work-bar { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.work-bar .bar { flex: 1; height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.work-bar .bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .2s; }
+.work-bar .pct { width: 34px; text-align: right; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.work-bar .step {
+  width: 26px; height: 24px; padding: 0; border-radius: 6px; font-size: 15px; line-height: 1;
+  background: var(--card); color: var(--text); border: 1px solid var(--line);
+}
+.work-bar .step:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.work-bar .step:disabled { opacity: .35; cursor: default; }
+.work.done .grow { text-decoration: line-through; color: var(--muted); }
+.work.done .bar i { background: var(--c-personal); }
+.work .due { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .work-bar .bar i { transition: none; } }

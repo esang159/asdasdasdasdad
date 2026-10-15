@@ -46,9 +46,18 @@
           <ul id="homeTodo" class="list"></ul>
         </div>
         <div class="card">
-          <h2>새로 올라온 공고 <small id="homeNewCount"></small></h2>
-          <ul id="homeNew" class="list"></ul>
+          <h2>진행 중인 업무 <small id="workCount"></small></h2>
+          <form id="workForm" class="inline-form todo-form">
+            <input name="title" placeholder="업무 추가 (예: 예비창업패키지 신청서 작성)" required>
+            <input name="due" class="ymd" inputmode="numeric" maxlength="10" placeholder="마감 20261015" aria-label="마감일 (예: 20261015)">
+            <button>추가</button>
+          </form>
+          <ul id="workList" class="list work-list"></ul>
         </div>
+      </div>
+      <div class="card">
+        <h2>새로 올라온 공고 <small id="homeNewCount"></small></h2>
+        <ul id="homeNew" class="list"></ul>
       </div>
       <div class="cal-full">
         <div class="card">

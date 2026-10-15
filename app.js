@@ -31,6 +31,7 @@ const store = {
 const state = {
   events: store.get("events", []),
   todos: store.get("todos", null) ?? SETUP_TODOS.map((text, i) => ({ id: "setup" + i, text, due: "", done: false })),
+  works: store.get("works", []),     // 진행 중인 업무 {id, title, due, progress 0~100}
   stars: store.get("stars", {}),     // 공고 id -> 공고 사본 (목록에서 빠져도 유지)
   memo: store.get("memo", ""),
   notices: [],
@@ -112,6 +113,7 @@ document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("cli
 
 function renderHome() {
   $("#homeTodo").innerHTML = todoListHTML();
+  renderWorks();
 
   const fresh = state.notices.filter(isNew);
   const freshShown = fresh.filter((n) => n.matched && n.matched.length).concat(fresh.filter((n) => !(n.matched && n.matched.length))).slice(0, 10);
@@ -394,6 +396,57 @@ $("#nList").addEventListener("click", (e) => {
   }
 });
 
+// ---------------------------------------------------------------- 진행 중인 업무
+// 진행률은 -/+ 버튼으로 10%씩. 100% 가 되면 완료로 표시하고 목록 아래로 내린다.
+
+function renderWorks() {
+  const list = state.works.slice().sort((a, b) =>
+    (a.progress >= 100) - (b.progress >= 100) || (a.due || "9999").localeCompare(b.due || "9999"));
+  const active = state.works.filter((w) => w.progress < 100).length;
+  $("#workCount").textContent = state.works.length ? `(${active}건 진행 중)` : "";
+  $("#workList").innerHTML = list.length ? list.map((w) => {
+    const done = w.progress >= 100;
+    return `
+    <li class="work ${done ? "done" : ""}">
+      <div class="work-top">
+        <span class="grow">${esc(w.title)}</span>
+        ${w.due ? (done ? `<span class="meta due">${esc(w.due.replace(/-/g, "."))}</span>` : ddayBadge(w.due)) : ""}
+        <button class="icon" data-work-del="${w.id}" title="삭제">×</button>
+      </div>
+      <div class="work-bar">
+        <div class="bar" role="progressbar" aria-valuenow="${w.progress}" aria-valuemin="0" aria-valuemax="100"><i style="width:${w.progress}%"></i></div>
+        <span class="pct">${done ? "완료" : w.progress + "%"}</span>
+        <button class="step" data-work-step="-10" data-id="${w.id}" aria-label="진행률 낮추기" ${w.progress <= 0 ? "disabled" : ""}>−</button>
+        <button class="step" data-work-step="10" data-id="${w.id}" aria-label="진행률 올리기" ${done ? "disabled" : ""}>+</button>
+      </div>
+    </li>`;
+  }).join("") : `<li class="empty">진행 중인 업무를 추가해 보세요.</li>`;
+}
+
+$("#workForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const due = readYmd(f.due, false);
+  if (due === undefined) return;
+  state.works.push({ id: uid(), title: f.title.value.trim(), due, progress: 0 });
+  store.set("works", state.works);
+  f.reset();
+  renderWorks();
+  f.title.focus();
+});
+$("#workList").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.workDel) {
+    state.works = state.works.filter((w) => w.id !== b.dataset.workDel);
+  } else if (b.dataset.workStep) {
+    const w = state.works.find((x) => x.id === b.dataset.id);
+    if (w) w.progress = Math.max(0, Math.min(100, w.progress + Number(b.dataset.workStep)));
+  } else return;
+  store.set("works", state.works);
+  renderWorks();
+});
+
 // ---------------------------------------------------------------- 할 일 / 메모
 
 // 체크해도 지우지 않고 줄만 긋는다. 순서는 추가한 순서 그대로.
@@ -472,10 +525,14 @@ function pageContext() {
     .filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; })
     .slice(0, 60)
     .map((n) => `- [${n.id}] ${n.title} | ${n.org || ""} | ${n.kind || "지원사업"} | 지역 ${(n.regions || []).join(",") || "전국"} | 대상 ${n.target || "-"} | 접수 ${n.start || "?"}~${n.end || "?"}${state.stars[n.id] ? " | ★관심" : ""}`);
+  const works = state.works.filter((w) => w.progress < 100).map((w) => `- ${w.title} (진행률 ${w.progress}%${w.due ? ", 마감 " + w.due : ""})`);
   return `오늘: ${today} (${new Date().toLocaleDateString("ko-KR", { weekday: "long" })})
 
 [앞으로 30일 일정]
 ${soon.join("\n") || "(없음)"}
+
+[진행 중인 업무]
+${works.join("\n") || "(없음)"}
 
 [남은 할 일]
 ${todos.join("\n") || "(없음)"}
@@ -610,7 +667,7 @@ $("#askClose").addEventListener("click", () => { askCtl?.abort(); $("#askPanel")
 // ---------------------------------------------------------------- 백업
 
 $("#exportBtn").addEventListener("click", () => {
-  const data = { events: state.events, todos: state.todos, stars: state.stars, memo: state.memo };
+  const data = { events: state.events, todos: state.todos, works: state.works, stars: state.stars, memo: state.memo };
   const blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -624,7 +681,7 @@ $("#importFile").addEventListener("change", async (e) => {
   try {
     const data = JSON.parse(await file.text());
     if (!confirm("현재 데이터를 백업 파일 내용으로 바꿀까요?")) return;
-    for (const k of ["events", "todos", "stars", "memo"]) {
+    for (const k of ["events", "todos", "works", "stars", "memo"]) {
       if (data[k] !== undefined) { state[k] = data[k]; store.set(k, data[k]); }
     }
     $("#memo").value = state.memo;
