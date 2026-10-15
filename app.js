@@ -1,4 +1,4 @@
-// 내 업무페이지 - 일정 / 사업공고 / 할 일 / 메모
+// Sol Works - 일정 / 사업공고 / 할 일 / 메모
 // 개인 데이터는 브라우저 localStorage 에 저장되고, 공고는 data/notices.json 에서 읽는다.
 
 const KINDS = { work: "업무", meeting: "회의", deadline: "마감", personal: "개인" };
@@ -677,7 +677,7 @@ async function ask(question) {
   $("#askStop").hidden = false;
   askCtl = new AbortController();
   const canUseTools = !!(await sampleFn.limits().catch(() => null))?.tools;
-  const prompt = `너는 사용자의 개인 업무페이지에 있는 비서야. 아래 페이지 데이터를 보고 한국어로 짧고 바로 쓸 수 있게 답해.
+  const prompt = `너는 사용자의 개인 업무 대시보드 "Sol Works"에 있는 비서야. 아래 페이지 데이터를 보고 한국어로 짧고 바로 쓸 수 있게 답해.
 일정이나 할 일을 추가해 달라고 하면 도구를 써서 실제로 추가하고, 무엇을 추가했는지 한 줄로 알려줘.
 "다음 주 화요일" 같은 상대 날짜는 오늘 날짜를 기준으로 계산해. 마크다운 표나 제목은 쓰지 말고 평문과 짧은 목록만 써.
 
@@ -722,7 +722,7 @@ $("#exportBtn").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `업무페이지-백업-${todayStr()}.json`;
+  a.download = `SolWorks-백업-${todayStr()}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
 });
