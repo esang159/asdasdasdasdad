@@ -1,0 +1,160 @@
+{
+ "updated_at": "2026-10-15T07:00:00+09:00",
+ "sample": true,
+ "keywords": [
+  "창업",
+  "R&D",
+  "수출",
+  "AI",
+  "인공지능",
+  "디지털",
+  "바우처",
+  "스마트"
+ ],
+ "errors": [],
+ "items": [
+  {
+   "id": "sample:45887b1e439e",
+   "source": "K-Startup",
+   "title": "[샘플] 2026년 예비창업패키지 추가 모집",
+   "org": "창업진흥원",
+   "category": "사업화",
+   "start": "2026-10-12",
+   "end": "2026-10-28",
+   "posted": "2026-10-12",
+   "url": "https://www.k-startup.go.kr",
+   "summary": "예비창업자 사업화 자금 최대 1억원.",
+   "first_seen": "2026-10-15",
+   "matched": [
+    "창업"
+   ]
+  },
+  {
+   "id": "sample:2d4605003292",
+   "source": "기업마당",
+   "title": "[샘플] 2026년 하반기 중소기업 AI 도입 바우처 지원사업 공고",
+   "org": "중소벤처기업부",
+   "category": "기술",
+   "start": "2026-10-10",
+   "end": "2026-10-20",
+   "posted": "2026-10-10",
+   "url": "https://www.bizinfo.go.kr",
+   "summary": "AI 솔루션 도입 비용의 최대 70%를 지원합니다.",
+   "first_seen": "2026-10-15",
+   "matched": [
+    "AI",
+    "바우처"
+   ]
+  },
+  {
+   "id": "sample:a7ba0de522c9",
+   "source": "K-Startup",
+   "title": "[샘플] 창업기업 디지털 전환 멘토링 프로그램",
+   "org": "서울창업허브",
+   "category": "멘토링·컨설팅",
+   "start": "2026-10-14",
+   "end": "2026-11-05",
+   "posted": "2026-10-14",
+   "url": "https://www.k-startup.go.kr",
+   "summary": "",
+   "first_seen": "2026-10-14",
+   "matched": [
+    "창업",
+    "디지털"
+   ]
+  },
+  {
+   "id": "sample:67923aaa869d",
+   "source": "기업마당",
+   "title": "[샘플] 수출바우처 추가 모집 공고",
+   "org": "산업통상자원부",
+   "category": "수출",
+   "start": "2026-10-01",
+   "end": "2026-10-31",
+   "posted": "2026-10-01",
+   "url": "https://www.bizinfo.go.kr",
+   "summary": "해외마케팅·인증 등 수출 지원 서비스 이용 바우처.",
+   "first_seen": "2026-10-14",
+   "matched": [
+    "수출",
+    "바우처"
+   ]
+  },
+  {
+   "id": "sample:ee1eec46e056",
+   "source": "기업마당",
+   "title": "[샘플] 중소기업 R&D 기획역량 강화 교육",
+   "org": "중소기업기술정보진흥원",
+   "category": "인력",
+   "start": "2026-10-13",
+   "end": "2026-10-25",
+   "posted": "2026-10-13",
+   "url": "https://www.bizinfo.go.kr",
+   "summary": "",
+   "first_seen": "2026-10-13",
+   "matched": [
+    "R&D"
+   ]
+  },
+  {
+   "id": "sample:4c7307852df9",
+   "source": "K-Startup",
+   "title": "[샘플] 초기창업패키지 딥테크 특화형 모집",
+   "org": "창업진흥원",
+   "category": "사업화",
+   "start": "2026-10-08",
+   "end": "2026-10-22",
+   "posted": "2026-10-08",
+   "url": "https://www.k-startup.go.kr",
+   "summary": "",
+   "first_seen": "2026-10-08",
+   "matched": [
+    "창업"
+   ]
+  },
+  {
+   "id": "sample:5822cf89b094",
+   "source": "기업마당",
+   "title": "[샘플] 소상공인 경영개선 컨설팅 참여기업 모집",
+   "org": "소상공인시장진흥공단",
+   "category": "경영",
+   "start": "2026-10-05",
+   "end": "2026-11-15",
+   "posted": "2026-10-05",
+   "url": "https://www.bizinfo.go.kr",
+   "summary": "분야별 전문가 1:1 컨설팅.",
+   "first_seen": "2026-10-05",
+   "matched": []
+  },
+  {
+   "id": "sample:0d4b74ce4a13",
+   "source": "기업마당",
+   "title": "[샘플] 지역 제조기업 스마트공장 구축 지원",
+   "org": "경기도",
+   "category": "기술",
+   "start": "2026-09-20",
+   "end": "2026-10-17",
+   "posted": "2026-09-20",
+   "url": "https://www.bizinfo.go.kr",
+   "summary": "스마트공장 기초단계 구축 비용 지원.",
+   "first_seen": "2026-09-20",
+   "matched": [
+    "스마트"
+   ]
+  },
+  {
+   "id": "sample:bbaacb654886",
+   "source": "K-Startup",
+   "title": "[샘플] 글로벌 액셀러레이팅 참가기업 모집",
+   "org": "정보통신산업진흥원",
+   "category": "글로벌",
+   "start": "2026-09-01",
+   "end": "2026-10-10",
+   "posted": "2026-09-01",
+   "url": "https://www.k-startup.go.kr",
+   "summary": "",
+   "first_seen": "2026-09-01",
+   "matched": []
+  }
+ ]
+}

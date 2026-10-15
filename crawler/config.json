@@ -1,0 +1,17 @@
+{
+  "keywords": ["창업", "R&D", "수출", "AI", "인공지능", "디지털", "바우처", "스마트"],
+  "exclude_keywords": [],
+  "keep_expired_days": 14,
+  "sources": {
+    "bizinfo": {
+      "enabled": true,
+      "search_count": 300
+    },
+    "kstartup": {
+      "enabled": true,
+      "per_page": 200
+    },
+    "rss": [
+    ]
+  }
+}
