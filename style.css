@@ -282,7 +282,7 @@ input.ymd { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 @media (max-width: 600px) { .cal-head h2 { min-width: 0; } }
 
 /* 진행 중인 업무 */
-.work-list li.work { display: block; padding: 10px 0; }
+.work-list li.work { display: block; padding: 10px 0 10px 12px; }
 .work-top { display: flex; align-items: center; gap: 8px; }
 .work-top .grow { white-space: normal; font-weight: 500; }
 .work-bar { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
@@ -322,3 +322,25 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 #homeTodo, #workList, #homeNew { padding-right: 6px; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--rule) transparent; }
 #homeTodo::-webkit-scrollbar, #workList::-webkit-scrollbar, #homeNew::-webkit-scrollbar { width: 6px; }
 #homeTodo::-webkit-scrollbar-thumb, #workList::-webkit-scrollbar-thumb, #homeNew::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+/* 업무 우선순위 */
+.prio-select { flex: none; width: auto; min-width: 72px; }
+.order-btns { display: inline-flex; flex-direction: column; gap: 2px; flex: none; }
+.work-bar .step.mini, .order-btns .step.mini {
+  width: 22px; height: 16px; padding: 0; font-size: 9px; line-height: 1; border-radius: 4px;
+  background: var(--card); color: var(--muted); border: 1px solid var(--line);
+}
+.order-btns .step.mini:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.order-btns .step.mini:disabled { opacity: .25; cursor: default; }
+.prio-chip {
+  flex: none; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  border: 1px solid currentColor; background: transparent; cursor: pointer;
+}
+.prio-chip.p1 { color: var(--hot); background: var(--hot-soft); }
+.prio-chip.p2 { color: var(--warn); background: var(--warn-soft); }
+.prio-chip.p3 { color: var(--muted); background: var(--bg); }
+.work.prio-1 { box-shadow: inset 3px 0 0 var(--hot); }
+.work.prio-2 { box-shadow: inset 3px 0 0 var(--warn); }
+.work.prio-3 { box-shadow: inset 3px 0 0 var(--line); }
+.work.done { box-shadow: inset 3px 0 0 var(--line); }
+.work.done .prio-chip { opacity: .5; }

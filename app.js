@@ -408,16 +408,42 @@ function workProgress(w) {
 }
 const workName = (id) => state.works.find((w) => w.id === id)?.title;
 
+// 우선순위 1=높음 2=보통 3=낮음. 정렬: 진행 중 먼저 → 우선순위 → 직접 정한 순서(▲▼).
+const PRIORITY = { 1: "높음", 2: "보통", 3: "낮음" };
+state.works.forEach((w, i) => { w.priority ??= 2; w.order ??= i; });
+
+function sortedWorks() {
+  return state.works.slice().sort((a, b) =>
+    (workProgress(a) >= 100) - (workProgress(b) >= 100) || a.priority - b.priority || a.order - b.order);
+}
+
+function moveWork(id, dir) {
+  const list = sortedWorks();
+  const i = list.findIndex((w) => w.id === id);
+  const other = list[i + dir];
+  const w = list[i];
+  // 같은 우선순위·같은 상태(진행 중/완료) 안에서만 자리를 바꾼다
+  if (!other || other.priority !== w.priority || (workProgress(other) >= 100) !== (workProgress(w) >= 100)) return;
+  [w.order, other.order] = [other.order, w.order];
+  store.set("works", state.works);
+  renderWorks();
+}
+
 function renderWorks() {
-  const list = state.works.slice().sort((a, b) =>
-    (workProgress(a) >= 100) - (workProgress(b) >= 100) || (a.due || "9999").localeCompare(b.due || "9999"));
+  const list = sortedWorks();
   const active = state.works.filter((w) => workProgress(w) < 100).length;
   $("#workCount").textContent = state.works.length ? `(${active}건 진행 중)` : "";
-  $("#workList").innerHTML = list.length ? list.map((w) => {
+  const sameGroup = (a, b) => a && b && a.priority === b.priority && (workProgress(a) >= 100) === (workProgress(b) >= 100);
+  $("#workList").innerHTML = list.length ? list.map((w, i) => {
     const pr = workProgress(w), done = pr >= 100, ts = workTodos(w), auto = ts.length > 0;
     return `
-    <li class="work ${done ? "done" : ""}">
+    <li class="work prio-${w.priority} ${done ? "done" : ""}">
       <div class="work-top">
+        <span class="order-btns">
+          <button class="step mini" data-work-move="-1" data-id="${w.id}" aria-label="위로" ${sameGroup(w, list[i - 1]) ? "" : "disabled"}>▲</button>
+          <button class="step mini" data-work-move="1" data-id="${w.id}" aria-label="아래로" ${sameGroup(w, list[i + 1]) ? "" : "disabled"}>▼</button>
+        </span>
+        <button class="prio-chip p${w.priority}" data-work-prio="${w.id}" title="눌러서 우선순위 바꾸기">${PRIORITY[w.priority]}</button>
         <span class="grow">${esc(w.title)}</span>
         ${w.due ? (done ? `<span class="meta due">${esc(w.due.replace(/-/g, "."))}</span>` : ddayBadge(w.due)) : ""}
         <button class="icon" data-work-del="${w.id}" title="업무 삭제">×</button>
@@ -459,9 +485,10 @@ $("#workForm").addEventListener("submit", (e) => {
   const f = e.target;
   const due = readYmd(f.due, false);
   if (due === undefined) return;
-  state.works.push({ id: uid(), title: f.title.value.trim(), due, progress: 0 });
+  const order = Math.max(0, ...state.works.map((w) => w.order + 1));
+  state.works.push({ id: uid(), title: f.title.value.trim(), due, progress: 0, priority: Number(f.priority.value) || 2, order });
   store.set("works", state.works);
-  f.reset();
+  f.title.value = ""; f.due.value = "";
   renderWorks();
   f.title.focus();
 });
@@ -474,6 +501,12 @@ $("#workList").addEventListener("click", (e) => {
     // 업무를 지워도 할 일은 남기고 연결만 끊는다
     for (const t of state.todos) if (t.workId === id) delete t.workId;
     store.set("todos", state.todos);
+  } else if (b.dataset.workMove) {
+    moveWork(b.dataset.id, Number(b.dataset.workMove));
+    return;
+  } else if (b.dataset.workPrio) {
+    const w = state.works.find((x) => x.id === b.dataset.workPrio);
+    if (w) { w.priority = (w.priority % 3) + 1; w.order = Math.max(0, ...state.works.map((x) => x.order + 1)); }
   } else if (b.dataset.workStep) {
     const w = state.works.find((x) => x.id === b.dataset.id);
     if (w) w.progress = Math.max(0, Math.min(100, w.progress + Number(b.dataset.workStep)));
@@ -575,7 +608,7 @@ function pageContext() {
     .filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; })
     .slice(0, 60)
     .map((n) => `- [${n.id}] ${n.title} | ${n.org || ""} | ${n.kind || "지원사업"} | 지역 ${(n.regions || []).join(",") || "전국"} | 대상 ${n.target || "-"} | 접수 ${n.start || "?"}~${n.end || "?"}${state.stars[n.id] ? " | ★관심" : ""}`);
-  const works = state.works.filter((w) => workProgress(w) < 100).map((w) => `- ${w.title} (진행률 ${workProgress(w)}%${w.due ? ", 마감 " + w.due : ""})`);
+  const works = sortedWorks().filter((w) => workProgress(w) < 100).map((w) => `- [우선순위 ${PRIORITY[w.priority]}] ${w.title} (진행률 ${workProgress(w)}%${w.due ? ", 마감 " + w.due : ""})`);
   return `오늘: ${today} (${new Date().toLocaleDateString("ko-KR", { weekday: "long" })})
 
 [앞으로 30일 일정]

@@ -49,8 +49,13 @@
         <div class="card">
           <h2>진행 중인 업무 <small id="workCount"></small></h2>
           <form id="workForm" class="inline-form todo-form">
-            <input name="title" placeholder="업무 추가 (예: 예비창업패키지 신청서 작성)" required>
+            <input name="title" placeholder="업무 추가" required>
             <input name="due" class="ymd" inputmode="numeric" maxlength="10" placeholder="마감 20261015" aria-label="마감일 (예: 20261015)">
+            <select name="priority" class="prio-select" aria-label="우선순위">
+              <option value="1">높음</option>
+              <option value="2" selected>보통</option>
+              <option value="3">낮음</option>
+            </select>
             <button>추가</button>
           </form>
           <ul id="workList" class="list work-list"></ul>
