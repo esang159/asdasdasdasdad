@@ -220,6 +220,16 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .notice-tools { display: flex; gap: 8px; flex-wrap: wrap; }
 .notice-tools input { flex: 2; min-width: 180px; }
 .notice-tools select { flex: 1; min-width: 120px; width: auto; }
+.notice-tools #nPer { flex: 0 0 auto; min-width: 96px; }
+.pager { display: flex; justify-content: center; align-items: center; gap: 4px; flex-wrap: wrap; margin: 16px 0 4px; }
+.pager button {
+  min-width: 34px; height: 34px; padding: 0 10px; border-radius: 9px;
+  background: transparent; color: var(--muted); border: 1px solid var(--line); font-size: 13px; font-variant-numeric: tabular-nums;
+}
+.pager button:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+.pager button.on { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+.pager button:disabled { opacity: .35; cursor: default; }
+.pager .gap { color: var(--muted); padding: 0 4px; }
 .notice {
   display: flex; gap: 12px; align-items: flex-start;
   padding: 12px 0; border-bottom: 1px solid var(--line);

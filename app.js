@@ -346,9 +346,17 @@ function renderNotices() {
   if (sort === "deadline") list.sort((a, b) => (a.end || "9999").localeCompare(b.end || "9999"));
   else list.sort((a, b) => (b.first_seen || "").localeCompare(a.first_seen || "") || (b.posted || "").localeCompare(a.posted || ""));
 
+  // 한 번에 다 그리지 않고 10·30·50개씩 끊어서 보여준다
+  const total = list.length;
+  const per = Number($("#nPer").value) || 10;
+  const pages = Math.max(1, Math.ceil(total / per));
+  state.nPage = Math.min(Math.max(1, state.nPage || 1), pages);
+  const from = (state.nPage - 1) * per;
+  list = list.slice(from, from + per);
+
   const m = state.noticeMeta;
   const updated = m.updated_at ? new Date(m.updated_at).toLocaleString("ko-KR") : "-";
-  $("#nMeta").innerHTML = `${list.length}건 표시 · 마지막 수집 ${esc(updated)}` +
+  $("#nMeta").innerHTML = `${total}건` + (total > per ? ` 중 ${from + 1}–${from + list.length}` : "") + ` · 마지막 수집 ${esc(updated)}` +
     (m.sample ? ` · <b>샘플 데이터입니다</b> (API 키 설정 후 실제 공고로 바뀝니다)` : "") +
     (m.error ? ` · 공고 파일을 읽지 못했습니다` : "") +
     (m.errors && m.errors.length ? ` · 수집 오류 ${m.errors.length}건` : "");
@@ -381,10 +389,40 @@ function renderNotices() {
         <button class="ghost" data-memo="${esc(n.id)}">${state.noticeMemos[n.id] ? "메모 수정" : "메모 추가"}</button>
       </div>
     </div>`).join("") : `<p class="meta">조건에 맞는 공고가 없습니다.</p>`;
+  renderPager(pages);
 }
 
+// 페이지 번호: 처음 · 이전 · (지금 페이지 앞뒤 2쪽) · 다음 · 끝
+function renderPager(pages) {
+  const cur = state.nPage;
+  if (pages <= 1) { $("#nPager").innerHTML = ""; return; }
+  const nums = [];
+  for (let i = Math.max(1, cur - 2); i <= Math.min(pages, cur + 2); i++) nums.push(i);
+  const btn = (p, label, extra = "") =>
+    `<button type="button" data-page="${p}" ${extra}>${label}</button>`;
+  $("#nPager").innerHTML =
+    btn(1, "«", cur === 1 ? "disabled aria-label=\"처음\"" : "aria-label=\"처음\"") +
+    btn(cur - 1, "이전", cur === 1 ? "disabled" : "") +
+    (nums[0] > 1 ? `<span class="gap">…</span>` : "") +
+    nums.map((p) => btn(p, p, p === cur ? `class="on" aria-current="page"` : "")).join("") +
+    (nums[nums.length - 1] < pages ? `<span class="gap">…</span>` : "") +
+    btn(cur + 1, "다음", cur === pages ? "disabled" : "") +
+    btn(pages, "»", cur === pages ? "disabled aria-label=\"끝\"" : "aria-label=\"끝\"");
+}
+$("#nPager").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-page]");
+  if (!b || b.disabled) return;
+  state.nPage = Number(b.dataset.page);
+  renderNotices();
+  $("#nKind").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 $("#nRegion").value = store.get("region", "");
-["#nSearch", "#nSource", "#nRegion", "#nFilter", "#nSort"].forEach((s) => $(s).addEventListener("input", renderNotices));
+$("#nPer").value = String(store.get("nPer", 10));
+$("#nPer").addEventListener("input", () => store.set("nPer", Number($("#nPer").value)));
+// 조건을 바꾸면 첫 페이지로
+["#nSearch", "#nSource", "#nRegion", "#nFilter", "#nSort", "#nPer"].forEach((s) =>
+  $(s).addEventListener("input", () => { state.nPage = 1; renderNotices(); }));
 
 function kindBadge(n) {
   const k = n.kind || "지원사업";
@@ -407,6 +445,7 @@ $("#nKind").addEventListener("click", (e) => {
   const b = e.target.closest("button");
   if (!b) return;
   state.kind = b.dataset.kind;
+  state.nPage = 1;
   store.set("kind", state.kind);
   syncKindToggle();
   renderNotices();

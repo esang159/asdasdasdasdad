@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="manifest" href="site.webmanifest">
   <meta name="theme-color" content="#0b0a09">
-  <link rel="stylesheet" href="style.css?v=20261015n">
+  <link rel="stylesheet" href="style.css?v=20261015p">
 </head>
 <body class="locked hub-mode">
   <!-- 로그인 페이지: 로그인하기 전에는 이것만 보인다 -->
@@ -177,9 +177,15 @@
             <option value="new">최신순</option>
             <option value="deadline">마감 임박순</option>
           </select>
+          <select id="nPer" aria-label="한 페이지에 보일 공고 수">
+            <option value="10">10개씩</option>
+            <option value="30">30개씩</option>
+            <option value="50">50개씩</option>
+          </select>
         </div>
         <p class="meta" id="nMeta"></p>
         <div id="nList" class="notice-list"></div>
+        <nav id="nPager" class="pager" aria-label="공고 페이지"></nav>
       </div>
     </section>
 
@@ -240,7 +246,7 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=20261015n"></script>
+  <script src="app.js?v=20261015p"></script>
   <script type="module" src="sync.js?v=20261015n" onerror="window.solSyncFailed && window.solSyncFailed('스크립트를 불러오지 못했어요')"></script>
 </body>
 </html>
