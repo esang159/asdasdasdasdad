@@ -434,8 +434,8 @@ function renderWorks() {
         ${ts.map((t) => `
           <li class="todo ${t.done ? "done" : ""}">
             <input type="checkbox" data-todo="${t.id}" ${t.done ? "checked" : ""} aria-label="완료">
-            <span class="grow">${esc(t.text)}</span>
             ${t.due && !t.done ? ddayBadge(t.due) : ""}
+            <span class="grow">${esc(t.text)}</span>
           </li>`).join("")}
       </ul>
       <form class="work-todo-form" data-work="${w.id}">
@@ -502,9 +502,9 @@ function todoListHTML() {
   return state.todos.length ? state.todos.map((t) => `
     <li class="todo ${t.done ? "done" : ""}">
       <input type="checkbox" data-todo="${t.id}" ${t.done ? "checked" : ""} aria-label="완료">
-      <span class="grow">${esc(t.text)}</span>
-      ${t.workId && workName(t.workId) ? `<span class="work-chip" title="연결된 업무">${esc(workName(t.workId))}</span>` : ""}
       ${t.due ? (t.done ? `<span class="meta due">${esc(t.due.replace(/-/g, "."))}</span>` : ddayBadge(t.due)) : ""}
+      ${t.workId && workName(t.workId) ? `<span class="work-chip" title="연결된 업무">${esc(workName(t.workId))}</span>` : ""}
+      <span class="grow">${esc(t.text)}</span>
       <button class="icon" data-todo-del="${t.id}" title="삭제">×</button>
     </li>`).join("") : `<li class="empty">할 일이 없습니다.</li>`;
 }
