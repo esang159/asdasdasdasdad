@@ -4,14 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sol Works</title>
-  <link rel="stylesheet" href="style.css?v=20261015h">
+  <link rel="stylesheet" href="style.css?v=20261015i">
 </head>
-<body class="locked">
+<body class="locked hub-mode">
   <!-- 로그인 페이지: 로그인하기 전에는 이것만 보인다 -->
   <section id="gate" class="gate" aria-labelledby="gateTitle">
     <div class="gate-card">
       <h1 id="gateTitle" class="gate-brand">Sol Works</h1>
-      <p class="gate-sub">일정 · 할 일 · 사업공고를 한 곳에서</p>
       <p class="gate-wait" id="gateWait">불러오는 중…</p>
       <form id="loginForm" class="stack" hidden>
         <label>아이디 <input name="id" autocomplete="username" required></label>
@@ -26,8 +25,46 @@
     </div>
   </section>
 
+  <!-- 서비스 선택: 로그인하면 먼저 보이는 화면 -->
+  <section id="hub" class="hub" aria-labelledby="hubTitle">
+    <div class="hub-top">
+      <h1 id="hubTitle" class="hub-brand">Sol Works</h1>
+      <div class="hub-user">
+        <span id="hubUser"></span>
+        <button type="button" class="ghost sync-btn" id="hubLogout">로그아웃</button>
+      </div>
+    </div>
+    <div class="hub-grid">
+      <button type="button" class="svc svc-dash" id="openDash">
+        <span class="svc-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="9" rx="2"/><rect x="13.5" y="3" width="7.5" height="5.5" rx="2"/><rect x="3" y="15" width="7.5" height="6" rx="2"/><rect x="13.5" y="11.5" width="7.5" height="9.5" rx="2"/></svg>
+        </span>
+        <span class="svc-name">대시보드</span>
+        <span class="svc-desc">일정 · 할 일 · 진행 중인 업무 · 사업공고</span>
+        <span class="svc-meta" id="dashMeta"></span>
+        <span class="svc-go" aria-hidden="true">열기 →</span>
+      </button>
+      <button type="button" class="svc svc-ai" disabled aria-disabled="true">
+        <span class="svc-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="14" height="14" rx="3"/><path d="M16.5 10l5-3v10l-5-3"/><path d="M6.5 12h6M9.5 9v6"/></svg>
+        </span>
+        <span class="svc-name">AI 영상 분석 플랫폼</span>
+        <span class="svc-desc">영상 업로드 · 자동 분석</span>
+        <span class="svc-chip">준비 중</span>
+      </button>
+      <button type="button" class="svc svc-trip" disabled aria-disabled="true">
+        <span class="svc-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>
+        </span>
+        <span class="svc-name">여행 플랫폼</span>
+        <span class="svc-desc">여행 계획 · 일정 정리</span>
+        <span class="svc-chip">준비 중</span>
+      </button>
+    </div>
+  </section>
+
   <header class="topbar">
-    <div class="brand">Sol Works</div>
+    <button type="button" class="brand" id="toHub" title="서비스 선택으로">Sol Works</button>
     <nav class="tabs" role="tablist">
       <button data-tab="home" class="active">대시보드</button>
       <button data-tab="notices">사업공고</button>
@@ -195,7 +232,7 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=20261015h"></script>
-  <script type="module" src="sync.js?v=20261015h" onerror="window.solSyncFailed && window.solSyncFailed('스크립트를 불러오지 못했어요')"></script>
+  <script src="app.js?v=20261015i"></script>
+  <script type="module" src="sync.js?v=20261015i" onerror="window.solSyncFailed && window.solSyncFailed('스크립트를 불러오지 못했어요')"></script>
 </body>
 </html>

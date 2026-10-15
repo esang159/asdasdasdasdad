@@ -418,8 +418,58 @@ body.locked > header, body.locked > main { display: none; }
   width: min(360px, 100%); padding: 32px 28px 28px;
   background: var(--card); border: 1px solid var(--line); border-radius: 16px;
 }
-.gate-brand { margin: 0; font-size: 28px; letter-spacing: -.01em; }
-.gate-sub { margin: 6px 0 24px; color: var(--muted); font-size: 13px; }
+.gate-brand { margin: 0 0 26px; font-size: 30px; letter-spacing: -.01em; text-align: center; }
 .gate-wait { color: var(--muted); }
 .gate form button { width: 100%; padding: 10px; }
 .gate .login-msg { min-height: 1.2em; margin: 0; color: var(--danger); font-size: 13px; }
+
+/* 서비스 선택 화면 */
+.hub { display: none; }
+body.hub-mode:not(.locked) > .hub { display: block; }
+body.hub-mode > header, body.hub-mode > main { display: none; }
+.hub {
+  max-width: 1040px; margin: 0 auto;
+  padding: 56px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px));
+}
+.hub-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 36px; flex-wrap: wrap; }
+.hub-brand { margin: 0; font-size: 30px; letter-spacing: -.01em; }
+.hub-user { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.hub-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 860px) { .hub-grid { grid-template-columns: 1fr; } .hub { padding-top: 32px; } }
+
+.svc {
+  --tint: var(--accent); --tint-soft: var(--accent-soft);
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  min-height: 230px; padding: 24px 22px 20px; text-align: left;
+  background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 18px;
+  font: inherit; cursor: pointer; overflow: hidden;
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+.svc::after {   /* 카드 오른쪽 위에 은은한 색 번짐 */
+  content: ""; position: absolute; right: -60px; top: -60px; width: 180px; height: 180px; border-radius: 50%;
+  background: radial-gradient(circle, var(--tint-soft) 0%, transparent 70%); opacity: .9; pointer-events: none;
+}
+.svc-ai { --tint: #a58bf0; --tint-soft: #2c2540; }
+.svc-trip { --tint: #5fbfa6; --tint-soft: #1c3330; }
+.svc:not(:disabled):hover { transform: translateY(-3px); border-color: var(--tint); box-shadow: 0 12px 28px var(--shadow); }
+.svc:focus-visible { outline: 2px solid var(--tint); outline-offset: 3px; }
+.svc:disabled { cursor: default; }
+.svc-icon {
+  display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 10px;
+  border-radius: 14px; background: var(--tint-soft); color: var(--tint); position: relative; z-index: 1;
+}
+.svc-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.svc-name { font-size: 19px; font-weight: 600; position: relative; z-index: 1; }
+.svc-desc { color: var(--muted); font-size: 13px; position: relative; z-index: 1; }
+.svc-meta { margin-top: auto; padding-top: 14px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; position: relative; z-index: 1; }
+.svc-go { position: absolute; right: 20px; bottom: 18px; font-size: 13px; color: var(--tint); font-weight: 600; z-index: 1; }
+.svc-chip {
+  margin-top: auto; font-size: 11px; padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--muted); background: var(--bg); position: relative; z-index: 1;
+}
+.svc:disabled .svc-name, .svc:disabled .svc-icon { opacity: .75; }
+@media (prefers-reduced-motion: reduce) { .svc { transition: none; } }
+
+/* 대시보드 왼쪽 위 이름 = 서비스 선택으로 돌아가는 버튼 */
+button.brand { background: none; border: 0; padding: 0; color: var(--text); font: inherit; font-weight: 700; font-size: 16px; cursor: pointer; }
+button.brand:hover { color: var(--accent); }

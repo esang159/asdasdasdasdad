@@ -113,6 +113,27 @@ function isNew(n) {
 
 // ---------------------------------------------------------------- 탭
 
+// ---------------------------------------------------------------- 서비스 선택 화면
+// 로그인하면 서비스 카드(대시보드 · AI 영상 분석 · 여행)부터 보여주고, 대시보드를 누르면 지금 화면으로.
+
+function showHub() {
+  document.body.classList.add("hub-mode");
+  history.replaceState(null, "", "#hub");
+  renderHub();
+}
+function openDashboard() {
+  document.body.classList.remove("hub-mode");
+  showTab(store.get("tab", "home"));
+}
+function renderHub() {
+  const todos = state.todos.filter((t) => !t.done).length;
+  const works = state.works.filter((w) => !workProgress || workProgress(w) < 100).length;
+  const fresh = state.notices.filter(isNew).length;
+  $("#dashMeta").textContent = `할 일 ${todos} · 진행 중 업무 ${works} · 새 공고 ${fresh}`;
+}
+$("#openDash").addEventListener("click", openDashboard);
+$("#toHub").addEventListener("click", showHub);
+
 function showTab(name) {
   document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
   document.querySelectorAll(".tab").forEach((s) => s.classList.toggle("active", s.id === "tab-" + name));
@@ -910,6 +931,7 @@ async function loadWeather() {
 // ---------------------------------------------------------------- 시작
 
 function renderAll() {
+  renderHub();
   renderHome();
   renderCalendar();
   renderNotices();
@@ -947,6 +969,7 @@ window.solApp = {
     if (key === "works") state.works.forEach((w, i) => { w.starred ??= false; w.order ??= i; });
     // 메모를 쓰는 중이면 메모 보드는 다시 그리지 않는다 (커서가 날아가지 않게)
     const typing = document.activeElement?.classList?.contains("note-text");
+    renderHub();
     renderHome();
     renderCalendar();
     renderNotices();
@@ -959,8 +982,9 @@ window.solApp = {
   $("#todayLabel").textContent = t.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
   state.cal = { year: t.getFullYear(), month: t.getMonth(), selected: todayStr() };
   resetEventForm();
-  const tab = location.hash.slice(1) || store.get("tab", "home");
-  showTab(document.getElementById("tab-" + tab) ? tab : "home");
+  const tab = location.hash.slice(1);
+  if (document.getElementById("tab-" + tab)) { document.body.classList.remove("hub-mode"); showTab(tab); }
+  else { showTab(store.get("tab", "home")); showHub(); }
   renderNoteColors();
   renderAll();
   loadNotices();

@@ -123,6 +123,7 @@ onAuthStateChanged(auth, (u) => {
     localStorage.removeItem("mwp.synced." + lastUid);
   }
   if (u) localStorage.setItem("mwp.lastUid", u.uid);
+  $("#hubUser").textContent = u ? toId(u.email) : "";
   if (u) {
     btn.title = toId(u.email) + " 로그인 중";
     start();
@@ -171,6 +172,12 @@ async function submit() {
 
 form.addEventListener("submit", (e) => { e.preventDefault(); submit(); });
 
-btn.addEventListener("click", async () => {
-  if (user && confirm("로그아웃할까요? 다시 로그인하면 그대로 돌아와요.")) await signOut(auth);
-});
+async function logout() {
+  if (user && confirm("로그아웃할까요? 다시 로그인하면 그대로 돌아와요.")) {
+    await signOut(auth);
+    history.replaceState(null, "", "#hub");
+    document.body.classList.add("hub-mode");   // 다음 로그인 때 서비스 선택부터
+  }
+}
+btn.addEventListener("click", logout);
+$("#hubLogout").addEventListener("click", logout);
