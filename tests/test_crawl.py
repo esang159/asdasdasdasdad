@@ -83,6 +83,15 @@ class MergeTest(unittest.TestCase):
         self.assertEqual(out[0]["kind"], "연구과제")
         self.assertEqual(out[0]["also"], ["NTIS"])
 
+    def test_keeps_same_source_variants(self):
+        new = [
+            {"id": "p", "source": "NTIS", "title": "2026년 OO사업 신규과제 공고(1차)"},
+            {"id": "q", "source": "NTIS", "title": "2026년 OO사업 신규과제 공고(2차)"},
+            {"id": "r", "source": "NTIS", "title": "2026년 OO사업 신규과제 공고(1차)"},
+        ]
+        out = crawl.merge([], new, self.cfg, date(2026, 10, 15))
+        self.assertEqual(len(out), 3)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -390,8 +390,9 @@ RND_RE = re.compile(r"R&D|R&amp;D|연구개발|기술개발|연구과제|과제\
 
 
 def norm_title(title: str) -> str:
-    """출처가 달라도 같은 공고를 알아보도록 괄호·기호·공백을 걷어낸 제목."""
-    t = re.sub(r"\[[^\]]*\]|\([^)]*\)", "", title or "")
+    """출처가 달라도 같은 공고를 알아보도록 앞머리 [기관] 표시와 기호·공백만 걷어낸 제목.
+    (1차)·(분야명) 같은 괄호 내용은 서로 다른 공고를 가르는 경우가 많아 남긴다."""
+    t = re.sub(r"^\s*(\[[^\]]*\]\s*)+", "", title or "")
     return re.sub(r"[^0-9A-Za-z가-힣]", "", t).lower()
 
 
@@ -420,7 +421,7 @@ def merge(old_items: list[dict], new_items: list[dict], cfg: dict, today: date) 
         if not it.get("kind"):
             it["kind"] = "연구과제" if RND_RE.search(it.get("title", "")) else "지원사업"
         nt = norm_title(it.get("title", ""))
-        if nt and nt in by_title:  # 다른 출처에 이미 있는 공고
+        if nt and nt in by_title and by_title[nt].get("source") != it.get("source"):  # 다른 출처에 이미 있는 공고
             first = by_title[nt]
             first.setdefault("also", [])
             if it["source"] != first["source"] and it["source"] not in first["also"]:
