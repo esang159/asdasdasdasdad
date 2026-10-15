@@ -27,6 +27,19 @@ class RegionTest(unittest.TestCase):
         self.assertEqual(crawl.detect_regions("중소벤처기업부", None), [])
 
 
+class NtisParseTest(unittest.TestCase):
+    def test_parse_rows(self):
+        html = """<table><tr><th>번호</th><th>공고명</th></tr>
+        <tr><td>1</td><td><a href="#" onclick="fn_view('AB12345678')">2026년 인공지능 핵심기술개발사업 신규과제 공고</a></td>
+        <td>과학기술정보통신부</td><td>2026.10.01</td><td>2026-10-05</td><td>2026-11-04</td></tr></table>"""
+        rows = crawl.parse_ntis_rows(html)
+        self.assertEqual(len(rows), 1)
+        r = rows[0]
+        self.assertEqual(r["org"], "과학기술정보통신부")
+        self.assertEqual((r["posted"], r["start"], r["end"]), ("2026-10-01", "2026-10-05", "2026-11-04"))
+        self.assertEqual(r["key"], "AB12345678")
+
+
 class MergeTest(unittest.TestCase):
     cfg = {"keywords": ["AI"], "exclude_keywords": ["채용"], "keep_expired_days": 7}
 
@@ -47,6 +60,17 @@ class MergeTest(unittest.TestCase):
         self.assertEqual(out["a"]["title"], "AI 바우처 (수정)")
         self.assertEqual(out["a"]["matched"], ["AI"])
         self.assertEqual(out["c"]["first_seen"], "2026-10-15")
+
+    def test_dedupe_and_kind(self):
+        today = date(2026, 10, 15)
+        new = [
+            {"id": "x", "source": "기업마당", "title": "[중기부] 2026년 창업성장기술개발사업 공고"},
+            {"id": "y", "source": "NTIS", "title": "2026년 창업성장기술개발사업 공고"},
+        ]
+        out = crawl.merge([], new, self.cfg, today)
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["kind"], "연구과제")
+        self.assertEqual(out[0]["also"], ["NTIS"])
 
 
 if __name__ == "__main__":

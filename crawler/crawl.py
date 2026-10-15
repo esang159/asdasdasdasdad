@@ -21,6 +21,7 @@ import sys
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -97,14 +98,24 @@ def fetch_bizinfo(cfg: dict) -> list[dict]:
     if not key:
         print("[bizinfo] BIZINFO_API_KEY 없음 - 건너뜀")
         return []
-    params = {
-        "crtfcKey": key,
-        "dataType": "json",
-        "searchCnt": cfg.get("search_count", 300),
-    }
-    url = "https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do?" + urllib.parse.urlencode(params)
-    data = json.loads(http_get(url))
-    rows = data.get("jsonArray") or data.get("items") or []
+    # 페이지를 넘기며 새 공고가 더 안 나올 때까지 모두 가져온다.
+    rows, seen = [], set()
+    for page in range(1, cfg.get("max_pages", 50) + 1):
+        params = {
+            "crtfcKey": key,
+            "dataType": "json",
+            "searchCnt": cfg.get("page_size", 100),
+            "pageUnit": cfg.get("page_size", 100),
+            "pageIndex": page,
+        }
+        url = "https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do?" + urllib.parse.urlencode(params)
+        data = json.loads(http_get(url))
+        batch = data.get("jsonArray") or data.get("items") or []
+        fresh = [r for r in batch if (r.get("pblancId") or r.get("pblancNm")) not in seen]
+        seen.update(r.get("pblancId") or r.get("pblancNm") for r in fresh)
+        rows.extend(fresh)
+        if not fresh:
+            break
     items = []
     for r in rows:
         title = clean(r.get("pblancNm"))
@@ -141,16 +152,23 @@ def fetch_kstartup(cfg: dict) -> list[dict]:
         print("[kstartup] DATA_GO_KR_KEY 없음 - 건너뜀")
         return []
     # 공공데이터포털 키는 이미 인코딩된 형태로 발급되는 경우가 있어 그대로 붙인다.
-    query = urllib.parse.urlencode({
-        "page": 1,
-        "perPage": cfg.get("per_page", 200),
-        "returnType": "json",
-        "cond[rcrt_prgs_yn::EQ]": "Y",
-    })
-    url = ("https://apis.data.go.kr/B552735/kisedKstartupService01/getAnnouncementInformation01"
-           f"?serviceKey={key}&{query}")
-    data = json.loads(http_get(url))
-    rows = data.get("data") or []
+    per_page = cfg.get("per_page", 200)
+    rows = []
+    for page in range(1, cfg.get("max_pages", 20) + 1):
+        query = urllib.parse.urlencode({
+            "page": page,
+            "perPage": per_page,
+            "returnType": "json",
+            "cond[rcrt_prgs_yn::EQ]": "Y",
+        })
+        url = ("https://apis.data.go.kr/B552735/kisedKstartupService01/getAnnouncementInformation01"
+               f"?serviceKey={key}&{query}")
+        data = json.loads(http_get(url))
+        batch = data.get("data") or []
+        rows.extend(batch)
+        total = data.get("totalCount") or data.get("matchCount")
+        if len(batch) < per_page or (total and len(rows) >= int(total)):
+            break
     items = []
     for r in rows:
         title = clean(r.get("biz_pbanc_nm") or r.get("intg_pbanc_biz_nm"))
@@ -214,12 +232,142 @@ def fetch_rss(feed: dict) -> list[dict]:
     return items
 
 
+# ---------------------------------------------------------------- NTIS 국가R&D통합공고
+# 부처별 R&D·비R&D 공고를 한곳에 모아 둔 공개 목록 페이지를 읽는다 (키 불필요).
+
+NTIS_LIST = "https://www.ntis.go.kr/rndgate/eg/un/ra/mng.do"
+DATE_RE = re.compile(r"(\d{4})[-./](\d{1,2})[-./](\d{1,2})")
+
+
+class _RowParser(HTMLParser):
+    """표의 각 <tr> 을 {cells: [...], links: [(href, onclick, text)]} 로 모은다."""
+
+    def __init__(self):
+        super().__init__()
+        self.rows, self._row, self._cell, self._link = [], None, None, None
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "tr":
+            self._row = {"cells": [], "links": []}
+        elif tag in ("td", "th") and self._row is not None:
+            self._cell = []
+        elif tag == "a" and self._row is not None:
+            self._link = [a.get("href") or "", a.get("onclick") or "", []]
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self._link is not None and self._row is not None:
+            href, onclick, text = self._link
+            self._row["links"].append((href, onclick, clean("".join(text))))
+            self._link = None
+        elif tag in ("td", "th") and self._cell is not None and self._row is not None:
+            self._row["cells"].append(clean("".join(self._cell)))
+            self._cell = None
+        elif tag == "tr" and self._row is not None:
+            if self._row["cells"]:
+                self.rows.append(self._row)
+            self._row = None
+
+    def handle_data(self, data):
+        if self._cell is not None:
+            self._cell.append(data)
+        if self._link is not None:
+            self._link[2].append(data)
+
+
+def parse_ntis_rows(html: str) -> list[dict]:
+    p = _RowParser()
+    p.feed(html)
+    items = []
+    for row in p.rows:
+        links = [l for l in row["links"] if len(l[2]) >= 6]
+        if not links:
+            continue
+        href, onclick, title = max(links, key=lambda l: len(l[2]))
+        dates = [d for c in row["cells"] for d in (parse_date("-".join(g)) for g in DATE_RE.findall(c)) if d]
+        if not dates:
+            continue
+        org = next((c for c in row["cells"]
+                    if c != title and len(c) <= 20 and re.search(r"(부|청|처|위원회|공사|재단|진흥원|연구원)$", c)), "")
+        if href and not href.startswith(("#", "javascript")):
+            url = urllib.parse.urljoin(NTIS_LIST, href)
+        else:
+            url = NTIS_LIST
+        ids = re.findall(r"['\"]([A-Za-z0-9_-]{6,})['\"]", onclick + " " + href)
+        dates_sorted = sorted(set(dates))
+        items.append({
+            "title": title,
+            "org": org,
+            "posted": dates[0],
+            "start": dates_sorted[-2] if len(dates_sorted) >= 2 else None,
+            "end": dates_sorted[-1],
+            "url": url,
+            "key": ids[0] if ids else title,
+            "cells": row["cells"],
+        })
+    return items
+
+
+def fetch_ntis(cfg: dict) -> list[dict]:
+    today = datetime.now(KST).date().isoformat()
+    items, seen = [], set()
+    for page in range(1, cfg.get("max_pages", 30) + 1):
+        html = http_get(f"{NTIS_LIST}?pageIndex={page}").decode("utf-8", "replace")
+        rows = parse_ntis_rows(html)
+        if page == 1:
+            # 사이트 구조가 바뀌었을 때 원인을 찾기 쉽도록 로그에 남긴다
+            print(f"[ntis] 1페이지 {len(html)}바이트, 행 {len(rows)}개")
+            for r in rows[:3]:
+                print("[ntis] 예시:", json.dumps(r, ensure_ascii=False)[:600])
+            if not rows:
+                i = html.find("<table")
+                print("[ntis] 표를 찾지 못함. HTML 일부:", html[max(i, 0):max(i, 0) + 3000])
+        fresh = [r for r in rows if r["key"] not in seen]
+        if not fresh:
+            break
+        seen.update(r["key"] for r in fresh)
+        for r in fresh:
+            if r["end"] >= today:
+                items.append({
+                    "id": make_id("ntis", r["key"]),
+                    "source": "NTIS",
+                    "kind": "연구과제",
+                    "title": r["title"],
+                    "org": r["org"],
+                    "category": "국가R&D",
+                    "start": r["start"],
+                    "end": r["end"],
+                    "posted": r["posted"],
+                    "url": r["url"],
+                    "summary": "",
+                    "target": "",
+                    "regions": detect_regions(r["title"]),
+                    "age": "",
+                    "how": "",
+                    "contact": "",
+                })
+        # 공고일 순으로 나오므로 한 페이지 전부가 오래된 공고면 멈춘다
+        if all(r["posted"] < cfg.get("since", "0000") for r in fresh):
+            break
+    print(f"[ntis] {len(items)}건 (접수중·예정)")
+    return items
+
+
 # ---------------------------------------------------------------- 병합
 
 def match_keywords(item: dict, keywords: list[str]) -> list[str]:
     text = " ".join([item.get("title", ""), item.get("category", ""), item.get("summary", ""),
                      item.get("target", "")]).lower()
     return [k for k in keywords if k.lower() in text]
+
+
+RND_RE = re.compile(r"R&D|R&amp;D|연구개발|기술개발|연구과제|과제\s*공모|원천기술|기초연구")
+
+
+def norm_title(title: str) -> str:
+    """출처가 달라도 같은 공고를 알아보도록 괄호·기호·공백을 걷어낸 제목."""
+    t = re.sub(r"\[[^\]]*\]|\([^)]*\)", "", title or "")
+    return re.sub(r"[^0-9A-Za-z가-힣]", "", t).lower()
 
 
 def merge(old_items: list[dict], new_items: list[dict], cfg: dict, today: date) -> list[dict]:
@@ -240,10 +388,20 @@ def merge(old_items: list[dict], new_items: list[dict], cfg: dict, today: date) 
         it["first_seen"] = prev.get("first_seen", today_s) if prev else today_s
         by_id[it["id"]] = it
 
-    result = []
+    result, by_title = [], {}
     for it in by_id.values():
         if it.get("end") and it["end"] < cutoff:
             continue
+        if not it.get("kind"):
+            it["kind"] = "연구과제" if RND_RE.search(it.get("title", "")) else "지원사업"
+        nt = norm_title(it.get("title", ""))
+        if nt and nt in by_title:  # 다른 출처에 이미 있는 공고
+            first = by_title[nt]
+            first.setdefault("also", [])
+            if it["source"] != first["source"] and it["source"] not in first["also"]:
+                first["also"].append(it["source"])
+            continue
+        by_title[nt] = it
         if any(x in it.get("title", "").lower() for x in excludes):
             continue
         it["matched"] = match_keywords(it, keywords)
@@ -264,6 +422,10 @@ def main() -> int:
         jobs.append(("bizinfo", lambda: fetch_bizinfo(src.get("bizinfo", {}))))
     if src.get("kstartup", {}).get("enabled", True):
         jobs.append(("kstartup", lambda: fetch_kstartup(src.get("kstartup", {}))))
+    if src.get("ntis", {}).get("enabled", True):
+        ntis_cfg = dict(src.get("ntis", {}))
+        ntis_cfg.setdefault("since", (datetime.now(KST).date() - timedelta(days=ntis_cfg.get("days_back", 120))).isoformat())
+        jobs.append(("ntis", lambda: fetch_ntis(ntis_cfg)))
     for feed in src.get("rss", []):
         jobs.append((f"rss:{feed.get('name')}", lambda feed=feed: fetch_rss(feed)))
 
