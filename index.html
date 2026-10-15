@@ -94,13 +94,13 @@
     <!-- 사업공고 -->
     <section id="tab-notices" class="tab">
       <div class="card">
+        <div class="kind-toggle" id="nKind" role="tablist" aria-label="공고 구분">
+          <button type="button" data-kind="" class="on">전체 <span class="cnt" data-cnt=""></span></button>
+          <button type="button" data-kind="지원사업" class="k-support">지원사업 <span class="cnt" data-cnt="지원사업"></span></button>
+          <button type="button" data-kind="연구과제" class="k-rnd">연구과제 <span class="cnt" data-cnt="연구과제"></span></button>
+        </div>
         <div class="notice-tools">
           <input id="nSearch" placeholder="검색 (제목·기관·분야)">
-          <select id="nKind">
-            <option value="">지원사업 + 연구과제</option>
-            <option>지원사업</option>
-            <option>연구과제</option>
-          </select>
           <select id="nSource"><option value="">전체 출처</option></select>
           <select id="nRegion">
             <option value="">전체 지역</option>

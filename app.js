@@ -85,7 +85,7 @@ function renderHome() {
     .filter((n) => { const d = daysUntil(n.end); return d != null && d >= 0 && d <= 7; })
     .sort((a, b) => a.end.localeCompare(b.end));
   $("#homeDeadline").innerHTML = deadlines.length
-    ? deadlines.map((n) => `<li>${ddayBadge(n.end)}<a class="grow" href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}</a></li>`).join("")
+    ? deadlines.map((n) => `<li>${ddayBadge(n.end)}${kindBadge(n)}<a class="grow" href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}</a></li>`).join("")
     : `<li class="empty">공고 탭에서 ★ 를 누르면 여기에 마감일이 표시됩니다.</li>`;
 
   const todos = state.todos.filter((t) => !t.done).slice(0, 8);
@@ -97,7 +97,7 @@ function renderHome() {
   const freshShown = fresh.filter((n) => n.matched && n.matched.length).concat(fresh.filter((n) => !(n.matched && n.matched.length))).slice(0, 10);
   $("#homeNewCount").textContent = fresh.length ? `(${fresh.length}건)` : "";
   $("#homeNew").innerHTML = freshShown.length
-    ? freshShown.map((n) => `<li><span class="badge">${esc(n.source)}</span>${(n.matched || []).map((k) => `<span class="badge new">${esc(k)}</span>`).join("")}<a class="grow" href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}</a>${ddayBadge(n.end)}</li>`).join("")
+    ? freshShown.map((n) => `<li>${kindBadge(n)}${(n.matched || []).map((k) => `<span class="badge new">${esc(k)}</span>`).join("")}<a class="grow" href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}</a>${ddayBadge(n.end)}</li>`).join("")
     : `<li class="empty">최근 3일 동안 새 공고가 없습니다.</li>`;
 
 }
@@ -238,10 +238,11 @@ async function loadNotices() {
 }
 
 function renderNotices() {
+  syncKindToggle();
   const q = $("#nSearch").value.trim().toLowerCase();
   const src = $("#nSource").value;
   const region = $("#nRegion").value;
-  const kind = $("#nKind").value;
+  const kind = state.kind;
   store.set("region", region);
   const filter = $("#nFilter").value;
   const sort = $("#nSort").value;
@@ -266,13 +267,13 @@ function renderNotices() {
     (m.errors && m.errors.length ? ` · 수집 오류 ${m.errors.length}건` : "");
 
   $("#nList").innerHTML = list.length ? list.map((n) => `
-    <div class="notice">
+    <div class="notice ${(n.kind || "지원사업") === "연구과제" ? "is-rnd" : "is-support"}">
       <button class="star ${state.stars[n.id] ? "on" : ""}" data-star="${esc(n.id)}" title="관심공고">${state.stars[n.id] ? "★" : "☆"}</button>
       <div class="body">
         <div class="title"><a href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}</a></div>
         <div class="sub">
           ${isNew(n) ? `<span class="badge new">NEW</span>` : ""}
-          <span class="badge ${n.kind === "연구과제" ? "rnd" : ""}">${esc(n.kind || "지원사업")}</span>
+          ${kindBadge(n)}
           <span class="badge">${esc([n.source, ...(n.also || [])].join(" · "))}</span>
           ${n.org ? `<span>${esc(n.org)}</span>` : ""}
           ${n.category ? `<span>· ${esc(n.category)}</span>` : ""}
@@ -297,7 +298,33 @@ function renderNotices() {
 }
 
 $("#nRegion").value = store.get("region", "");
-["#nSearch", "#nKind", "#nSource", "#nRegion", "#nFilter", "#nSort"].forEach((s) => $(s).addEventListener("input", renderNotices));
+["#nSearch", "#nSource", "#nRegion", "#nFilter", "#nSort"].forEach((s) => $(s).addEventListener("input", renderNotices));
+
+function kindBadge(n) {
+  const k = n.kind || "지원사업";
+  return `<span class="badge ${k === "연구과제" ? "kind-rnd" : "kind-support"}">${esc(k)}</span>`;
+}
+
+state.kind = store.get("kind", "");
+function syncKindToggle() {
+  const open = state.notices.filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; });
+  document.querySelectorAll("#nKind button").forEach((b) => {
+    b.classList.toggle("on", b.dataset.kind === state.kind);
+    b.setAttribute("aria-selected", b.dataset.kind === state.kind);
+  });
+  document.querySelectorAll("#nKind .cnt").forEach((c) => {
+    const k = c.dataset.cnt;
+    c.textContent = open.filter((n) => !k || (n.kind || "지원사업") === k).length;
+  });
+}
+$("#nKind").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  state.kind = b.dataset.kind;
+  store.set("kind", state.kind);
+  syncKindToggle();
+  renderNotices();
+});
 
 function findNotice(id) {
   return state.notices.find((n) => n.id === id) || state.stars[id];
