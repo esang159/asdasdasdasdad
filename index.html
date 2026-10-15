@@ -13,6 +13,7 @@
       <button data-tab="home" class="active">대시보드</button>
       <button data-tab="notices">사업공고</button>
       <button data-tab="memo">메모</button>
+      <button data-tab="backup">백업</button>
     </nav>
     <div class="today-label">
       <div id="weather" class="weather" hidden></div>
@@ -118,11 +119,16 @@
     <section id="tab-memo" class="tab">
       <div class="memo-head">
         <h2>메모 <small id="noteCount"></small></h2>
+        <input id="noteSearch" class="note-search" type="search" placeholder="메모 검색" aria-label="메모 검색">
         <div class="note-colors" id="newNoteColors" role="radiogroup" aria-label="새 메모 색"></div>
         <button type="button" id="addNote">+ 새 메모</button>
       </div>
       <div id="noteBoard" class="note-board"></div>
 
+    </section>
+
+    <!-- 백업 -->
+    <section id="tab-backup" class="tab">
       <div class="card backup">
         <h2>데이터 백업</h2>
         <p class="meta">일정·할 일·업무·메모·관심공고는 이 브라우저에만 저장됩니다. 다른 PC로 옮기려면 내보내기/가져오기를 쓰세요.</p>

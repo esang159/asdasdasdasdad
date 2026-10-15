@@ -577,8 +577,14 @@ function renderNoteColors() {
 }
 
 function renderNotes() {
-  $("#noteCount").textContent = state.notes.length ? `(${state.notes.length}개)` : "";
-  $("#noteBoard").innerHTML = state.notes.length ? state.notes.map((n) => `
+  const q = $("#noteSearch").value.trim().toLowerCase();
+  const list = q ? state.notes.filter((n) => n.text.toLowerCase().includes(q)) : state.notes;
+  $("#noteCount").textContent = !state.notes.length ? "" : q ? `(${state.notes.length}개 중 ${list.length}개)` : `(${state.notes.length}개)`;
+  if (state.notes.length && !list.length) {
+    $("#noteBoard").innerHTML = `<p class="meta note-empty">"${esc(q)}" 검색 결과가 없어요.</p>`;
+    return;
+  }
+  $("#noteBoard").innerHTML = list.length ? list.map((n) => `
     <div class="note n-${n.color}" data-note="${n.id}">
       <div class="note-tools">
         <span class="note-swatches">${NOTE_COLORS.map((c) =>
@@ -592,7 +598,10 @@ function renderNotes() {
 
 function saveNotes() { store.set("notes", state.notes); }
 
+$("#noteSearch").addEventListener("input", renderNotes);
+
 $("#addNote").addEventListener("click", () => {
+  $("#noteSearch").value = "";   // 새 메모가 바로 보이도록 검색을 비운다
   state.notes.unshift({ id: uid(), text: "", color: newNoteColor, updated: new Date().toISOString() });
   saveNotes();
   renderNotes();
