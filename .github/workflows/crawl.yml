@@ -2,7 +2,7 @@ name: 사업공고 수집
 
 on:
   schedule:
-    - cron: "0 22 * * *"   # 매일 07:00 KST
+    - cron: "47 23 * * *"  # 매일 08:47 KST (정각은 붐벼서 늦어지므로 조금 앞당김 → 보통 9시 전후 도착)
   workflow_dispatch:        # Actions 탭에서 수동 실행
     inputs:
       kakao_test:
