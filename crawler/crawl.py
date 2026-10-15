@@ -381,8 +381,8 @@ def fetch_ntis(cfg: dict) -> list[dict]:
 # ---------------------------------------------------------------- 병합
 
 def match_keywords(item: dict, keywords: list[str]) -> list[str]:
-    text = " ".join([item.get("title", ""), item.get("category", ""), item.get("summary", ""),
-                     item.get("target", "")]).lower()
+    # 분류명(예: '국가R&D')은 모든 공고에 붙어 있어 빼고, 제목·요약·대상만 본다
+    text = " ".join([item.get("title", ""), item.get("summary", ""), item.get("target", "")]).lower()
     return [k for k in keywords if k.lower() in text]
 
 
