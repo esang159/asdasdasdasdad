@@ -7,81 +7,91 @@
   font-display: swap;
 }
 
-/* 따뜻하고 차분한 톤: 데운 미색 바탕, 호두나무 갈색 강조, 채도를 낮춘 세이지·자두·벽돌색 */
+/* 바탕은 거의 무채색(아주 살짝 따뜻한 회색), 따뜻함은 강조색 하나(부드러운 코랄)로만.
+   버튼은 차콜, 링크는 본문색으로 두어 페이지 전체가 물든 느낌이 나지 않게 한다. */
 :root {
-  --bg: #f4f0ea;
-  --card: #fffdfa;
-  --text: #2e2823;
-  --muted: #7c7166;
-  --line: #e6ddd2;
-  --accent: #8a5a3c;
-  --accent-soft: #f3e7dc;
+  --bg: #f7f6f3;
+  --card: #ffffff;
+  --text: #262320;
+  --muted: #77716a;
+  --line: #e7e3dd;
+  --primary: #2d2925;
+  --on-primary: #ffffff;
+  --accent: #cc6a45;
+  --accent-soft: #fbefe9;
   --on-accent: #ffffff;
-  --danger: #b03a2e;
-  --c-work: #8a5a3c;
-  --c-meeting: #7a6596;
-  --c-deadline: #b5543c;
-  --c-personal: #5b7f6a;
-  --claude: #c96f4f;
-  --support: #4f7a5a;
-  --support-soft: #e4eee3;
-  --rnd: #7a5a8c;
-  --rnd-soft: #eee5f1;
-  --hot: #a94b32;
-  --hot-soft: #f6e2d9;
-  --warn: #8f6416;
-  --warn-soft: #f5e9cf;
-  --danger-soft: #f5dcd8;
-  --star: #c98a1b;
-  --shadow: rgba(60, 40, 20, .10);
-  --backdrop: rgba(40, 30, 20, .45);
+  --link: #262320;
+  --danger: #c2413a;
+  --c-work: #4a76b0;
+  --c-meeting: #8662b5;
+  --c-deadline: #d0603e;
+  --c-personal: #3f8a5f;
+  --claude: #d97757;
+  --support: #3d8a5e;
+  --support-soft: #e3f2e8;
+  --rnd: #6b58b8;
+  --rnd-soft: #ece8fa;
+  --hot: #c2502f;
+  --hot-soft: #fce8e1;
+  --warn: #9a6a0e;
+  --warn-soft: #fbf0d6;
+  --danger-soft: #fbe2df;
+  --star: #e0a21a;
+  --shadow: rgba(40, 30, 20, .10);
+  --backdrop: rgba(25, 20, 15, .45);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #1b1815;
-    --card: #24201c;
-    --text: #ece4da;
-    --muted: #a69a8c;
-    --line: #3a332c;
-    --accent: #d2a07c;
-    --accent-soft: #3a2c22;
-    --on-accent: #1b1815;
-    --danger: #e07a6c;
-    --support: #93bf9c;
-    --support-soft: #26332a;
-    --rnd: #c3a5d5;
-    --rnd-soft: #33283a;
-    --hot: #e8a089;
-    --hot-soft: #3d2820;
-    --warn: #e2bd74;
-    --warn-soft: #3a2f18;
-    --danger-soft: #402421;
-    --star: #e2b24e;
+    --bg: #191817;
+    --card: #22201e;
+    --text: #ece9e4;
+    --muted: #a39d95;
+    --line: #36322e;
+    --primary: #ece9e4;
+    --on-primary: #1c1a18;
+    --accent: #e8875f;
+    --accent-soft: #3b2a22;
+    --on-accent: #1c1a18;
+    --link: #ece9e4;
+    --danger: #ec8a80;
+    --support: #7fcb9b;
+    --support-soft: #203327;
+    --rnd: #ae9cf0;
+    --rnd-soft: #2c2742;
+    --hot: #f0a089;
+    --hot-soft: #3d2620;
+    --warn: #e8c06e;
+    --warn-soft: #3a2f16;
+    --danger-soft: #40221f;
+    --star: #efbe4e;
     --shadow: rgba(0, 0, 0, .35);
     --backdrop: rgba(0, 0, 0, .55);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #1b1815;
-  --card: #24201c;
-  --text: #ece4da;
-  --muted: #a69a8c;
-  --line: #3a332c;
-  --accent: #d2a07c;
-  --accent-soft: #3a2c22;
-  --on-accent: #1b1815;
-  --danger: #e07a6c;
-  --support: #93bf9c;
-  --support-soft: #26332a;
-  --rnd: #c3a5d5;
-  --rnd-soft: #33283a;
-  --hot: #e8a089;
-  --hot-soft: #3d2820;
-  --warn: #e2bd74;
-  --warn-soft: #3a2f18;
-  --danger-soft: #402421;
-  --star: #e2b24e;
+  --bg: #191817;
+  --card: #22201e;
+  --text: #ece9e4;
+  --muted: #a39d95;
+  --line: #36322e;
+  --primary: #ece9e4;
+  --on-primary: #1c1a18;
+  --accent: #e8875f;
+  --accent-soft: #3b2a22;
+  --on-accent: #1c1a18;
+  --link: #ece9e4;
+  --danger: #ec8a80;
+  --support: #7fcb9b;
+  --support-soft: #203327;
+  --rnd: #ae9cf0;
+  --rnd-soft: #2c2742;
+  --hot: #f0a089;
+  --hot-soft: #3d2620;
+  --warn: #e8c06e;
+  --warn-soft: #3a2f16;
+  --danger-soft: #40221f;
+  --star: #efbe4e;
   --shadow: rgba(0, 0, 0, .35);
   --backdrop: rgba(0, 0, 0, .55);
   color-scheme: dark;
@@ -96,7 +106,8 @@ body {
   font-size: 14px;
   line-height: 1.5;
 }
-a { color: var(--accent); text-decoration: none; }
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--accent); }
 a:hover { text-decoration: underline; }
 
 .topbar {
@@ -164,7 +175,7 @@ input, select, textarea {
 }
 textarea { resize: vertical; }
 button {
-  background: var(--accent); color: var(--on-accent); border: 0; border-radius: 8px;
+  background: var(--primary); color: var(--on-primary); border: 0; border-radius: 8px;
   padding: 7px 14px; cursor: pointer; white-space: nowrap;
 }
 button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
@@ -183,7 +194,7 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 
 .badge {
   display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px;
-  background: var(--accent-soft); color: var(--accent); white-space: nowrap;
+  background: var(--bg); color: var(--muted); border: 1px solid var(--line); white-space: nowrap;
 }
 .badge.kind-support { background: var(--support-soft); color: var(--support); font-weight: 600; }
 .badge.kind-rnd { background: var(--rnd-soft); color: var(--rnd); font-weight: 600; }
@@ -200,14 +211,14 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 /* Claude 검색창 */
 .ask {
   display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
-  background: var(--card); border: 1.5px solid var(--accent); border-radius: 14px;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 14px;
   padding: 6px 6px 6px 14px;
 }
-.ask:focus-within { box-shadow: 0 0 0 4px var(--accent-soft); }
+.ask:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
 .ask-mark { color: var(--claude); font-size: 18px; line-height: 1; }
 .ask input { border: 0; padding: 8px 4px; font-size: 15px; background: transparent; min-width: 0; }
 .ask input:focus { outline: none; }
-.ask-panel { border-color: var(--accent); }
+.ask-panel { border-color: var(--line); }
 .ask-q { font-weight: 600; margin-bottom: 8px; }
 .ask-a { white-space: pre-wrap; line-height: 1.65; }
 .ask-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
