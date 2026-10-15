@@ -237,8 +237,16 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .notice .summary { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .notice .actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
 .notice .actions button { font-size: 12px; padding: 4px 10px; }
-.star { background: none; color: var(--muted); font-size: 18px; padding: 0 4px; }
+.star {
+  background: none; color: var(--muted); padding: 3px; border-radius: 6px; line-height: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.star svg { fill: none; stroke: currentColor; stroke-width: 1.6; transition: transform .12s, fill .12s; }
+.star:hover { color: var(--star); }
+.star:hover svg { transform: scale(1.12); }
 .star.on { color: var(--star); }
+.star.on svg { fill: currentColor; }
+@media (prefers-reduced-motion: reduce) { .star svg { transition: none; } }
 #homeTodo .grow, #todoList .grow { white-space: normal; }
 @media (max-width: 600px) {
   .notice { flex-wrap: wrap; }
@@ -324,7 +332,7 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 #homeTodo::-webkit-scrollbar-thumb, #workList::-webkit-scrollbar-thumb, #homeNew::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
 
 /* 업무 ★ */
-.work-star { font-size: 17px; line-height: 1; padding: 0 2px; flex: none; }
+.work-star { flex: none; margin-left: -3px; }
 
 /* 메모 (포스트잇) */
 .memo-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }

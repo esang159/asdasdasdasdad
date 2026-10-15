@@ -80,6 +80,9 @@ document.addEventListener("input", (e) => {
 
 const safeUrl = (u) => (/^https?:\/\//i.test(u || "") ? u : "#");
 
+// 둥근 모서리 별 아이콘 (켜면 채움, 끄면 테두리만)
+const STAR_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3.6l2.5 5.1 5.6.8-4 3.9.9 5.6L12 16.4 7 19l.9-5.6-4-3.9 5.6-.8z" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -317,7 +320,7 @@ function renderNotices() {
 
   $("#nList").innerHTML = list.length ? list.map((n) => `
     <div class="notice ${(n.kind || "지원사업") === "연구과제" ? "is-rnd" : "is-support"}">
-      <button class="star ${state.stars[n.id] ? "on" : ""}" data-star="${esc(n.id)}" title="관심공고">${state.stars[n.id] ? "★" : "☆"}</button>
+      <button class="star ${state.stars[n.id] ? "on" : ""}" data-star="${esc(n.id)}" title="관심공고" aria-pressed="${!!state.stars[n.id]}">${STAR_SVG}</button>
       <div class="body">
         <div class="title"><a href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}</a></div>
         <div class="sub">
@@ -380,7 +383,7 @@ function findNotice(id) {
 }
 
 $("#nList").addEventListener("click", (e) => {
-  const starId = e.target.dataset.star;
+  const starId = e.target.closest("[data-star]")?.dataset.star;
   if (starId) {
     if (state.stars[starId]) delete state.stars[starId];
     else state.stars[starId] = findNotice(starId);
@@ -427,7 +430,7 @@ function renderWorks() {
     return `
     <li class="work ${done ? "done" : ""}">
       <div class="work-top">
-        <button class="star work-star ${w.starred ? "on" : ""}" data-work-star="${w.id}" title="중요 표시 (위로 올리기)" aria-pressed="${!!w.starred}">${w.starred ? "★" : "☆"}</button>
+        <button class="star work-star ${w.starred ? "on" : ""}" data-work-star="${w.id}" title="중요 표시 (위로 올리기)" aria-pressed="${!!w.starred}">${STAR_SVG}</button>
         <span class="grow">${esc(w.title)}</span>
         ${w.due ? (done ? `<span class="meta due">${esc(w.due.replace(/-/g, "."))}</span>` : ddayBadge(w.due)) : ""}
         <button class="icon" data-work-del="${w.id}" title="업무 삭제">×</button>
