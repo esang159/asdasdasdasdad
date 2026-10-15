@@ -404,3 +404,5 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 }
 .nudge span { flex: 1; min-width: 200px; }
 .nudge[hidden] { display: none; }
+.login-dialog { width: min(360px, calc(100vw - 32px)); }
+.login-msg { min-height: 1.2em; color: var(--danger); margin: 0; }

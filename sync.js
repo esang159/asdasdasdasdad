@@ -1,11 +1,11 @@
 // 여러 기기 동기화 (Firebase 무료 요금제)
-// 구글로 로그인하면 일정·할 일·업무·메모·관심공고를 Firestore 의 users/{내 uid}/data/{종류} 에 저장하고,
+// 아이디·비밀번호로 로그인하면 일정·할 일·업무·메모·관심공고를 Firestore 의 users/{내 uid}/data/{종류} 에 저장하고,
 // 다른 기기에서 바뀌면 바로 받아온다. 보안 규칙은 firestore.rules 참고 (본인 칸만 읽고 쓰기).
 // 이 파일을 못 불러오는 환경(예: claude.ai 미리보기)에서는 로그인 버튼이 안 보이고 기존처럼 이 기기에만 저장된다.
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut,
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, onSnapshot, serverTimestamp,
@@ -58,7 +58,7 @@ async function upload(key, value) {
   if (!user) return;
   try {
     await setDoc(ref(key), { value, updatedAt: serverTimestamp() });
-    setStatus("동기화됨", "ok");
+    setStatus("동기화됨 · " + toId(user.email), "ok");
   } catch (e) {
     console.error(e);
     setStatus("저장 실패 (다시 시도 중)", "err");
@@ -102,7 +102,7 @@ async function start() {
     const value = snap.data().value;
     if (!same(value, solApp.get(key))) solApp.apply(key, value);
   }));
-  setStatus("동기화됨", "ok");
+  setStatus("동기화됨 · " + toId(user.email), "ok");
 }
 
 onAuthStateChanged(auth, (u) => {
@@ -112,28 +112,63 @@ onAuthStateChanged(auth, (u) => {
   nudge.hidden = !!u || localStorage.getItem("mwp.nudgeLater") === "1";
   if (u) {
     btn.textContent = "로그아웃";
-    btn.title = u.email || "";
+    btn.title = toId(u.email) + " 로그인 중";
     start();
   } else {
-    btn.textContent = "구글로 로그인";
+    btn.textContent = "로그인";
     btn.title = "로그인하면 다른 기기와 동기화돼요";
     setStatus("이 기기에만 저장", "");
   }
 });
 
-async function login() {
-  const provider = new GoogleAuthProvider();
+// 아이디는 Firebase 이메일 로그인에 맞춰 "아이디@solworks.store" 로 바꿔 쓴다 (실제 메일은 안 감).
+const ID_DOMAIN = "solworks.store";
+const toEmail = (id) => (id.includes("@") ? id : `${id}@${ID_DOMAIN}`).toLowerCase();
+const toId = (email) => (email || "").replace("@" + ID_DOMAIN, "");
+
+const dlg = $("#loginDialog"), form = $("#loginForm"), msg = $("#loginMsg");
+const ERRORS = {
+  "auth/invalid-credential": "아이디나 비밀번호가 맞지 않아요.",
+  "auth/wrong-password": "아이디나 비밀번호가 맞지 않아요.",
+  "auth/user-not-found": "없는 아이디예요. 처음이면 '계정 만들기'를 누르세요.",
+  "auth/email-already-in-use": "이미 있는 아이디예요. 로그인을 누르세요.",
+  "auth/weak-password": "비밀번호는 6자 이상으로 해주세요.",
+  "auth/invalid-email": "아이디는 영문·숫자·. _ - 만 쓸 수 있어요.",
+  "auth/too-many-requests": "여러 번 틀려서 잠시 막혔어요. 조금 뒤에 다시 해주세요.",
+  "auth/operation-not-allowed": "Firebase에서 '이메일/비밀번호' 로그인이 꺼져 있어요.",
+  "auth/network-request-failed": "인터넷 연결을 확인해 주세요.",
+};
+
+function login() {
+  msg.textContent = "";
+  form.reset();
+  dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "");
+  form.id.focus();
+}
+
+async function submit(create) {
+  const id = form.id.value.trim(), pw = form.pw.value;
+  if (!/^[A-Za-z0-9._-]{3,30}$/.test(id) && !id.includes("@")) {
+    msg.textContent = "아이디는 영문·숫자·. _ - 로 3~30자예요.";
+    return;
+  }
+  if (pw.length < 6) { msg.textContent = "비밀번호는 6자 이상이에요."; return; }
+  msg.textContent = create ? "계정 만드는 중…" : "로그인 중…";
   try {
-    await signInWithPopup(auth, provider);
+    if (create) await createUserWithEmailAndPassword(auth, toEmail(id), pw);
+    else await signInWithEmailAndPassword(auth, toEmail(id), pw);
+    dlg.close();
   } catch (e) {
-    if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
-      await signInWithRedirect(auth, provider);
-    } else if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") {
-      console.error(e);
-      setStatus("로그인 실패: " + e.code, "err");
-    }
+    msg.textContent = ERRORS[e.code] || "실패했어요: " + e.code;
   }
 }
+
+form.addEventListener("submit", (e) => { e.preventDefault(); submit(false); });
+$("#signupBtn").addEventListener("click", () => {
+  if (!form.reportValidity()) return;
+  submit(true);
+});
+$("#loginClose").addEventListener("click", () => dlg.close());
 
 btn.addEventListener("click", async () => {
   if (user) {
