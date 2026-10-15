@@ -323,24 +323,59 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 #homeTodo::-webkit-scrollbar, #workList::-webkit-scrollbar, #homeNew::-webkit-scrollbar { width: 6px; }
 #homeTodo::-webkit-scrollbar-thumb, #workList::-webkit-scrollbar-thumb, #homeNew::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
 
-/* 업무 우선순위 */
-.prio-select { flex: none; width: auto; min-width: 72px; }
-.order-btns { display: inline-flex; flex-direction: column; gap: 2px; flex: none; }
-.work-bar .step.mini, .order-btns .step.mini {
-  width: 22px; height: 16px; padding: 0; font-size: 9px; line-height: 1; border-radius: 4px;
-  background: var(--card); color: var(--muted); border: 1px solid var(--line);
+/* 업무 ★ */
+.work-star { font-size: 17px; line-height: 1; padding: 0 2px; flex: none; }
+
+/* 메모 (포스트잇) */
+.memo-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.memo-head h2 { margin: 0; font-size: 18px; margin-right: auto; }
+.memo-head h2 small { color: var(--muted); font-weight: 400; font-size: 13px; }
+.note-colors, .note-swatches { display: inline-flex; gap: 6px; align-items: center; }
+.swatch {
+  width: 22px; height: 22px; padding: 0; border-radius: 50%;
+  border: 2px solid transparent; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); cursor: pointer;
 }
-.order-btns .step.mini:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
-.order-btns .step.mini:disabled { opacity: .25; cursor: default; }
-.prio-chip {
-  flex: none; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
-  border: 1px solid currentColor; background: transparent; cursor: pointer;
+.swatch.on { border-color: var(--text); }
+.swatch.mini { width: 14px; height: 14px; border-width: 1.5px; }
+.swatch.mini.on { border-color: var(--note-ink); }
+.n-yellow { --paper: #f3dc7c; }
+.n-peach { --paper: #f2bc98; }
+.n-pink { --paper: #eeb3c6; }
+.n-mint { --paper: #acd9ba; }
+.n-sky { --paper: #abc9e8; }
+.n-lavender { --paper: #c9b8ea; }
+.swatch { background: var(--paper); }
+:root { --note-ink: #2b2620; }
+
+.note-board {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px; margin-bottom: 24px; align-items: start;
 }
-.prio-chip.p1 { color: var(--hot); background: var(--hot-soft); }
-.prio-chip.p2 { color: var(--warn); background: var(--warn-soft); }
-.prio-chip.p3 { color: var(--muted); background: var(--bg); }
-.work.prio-1 { box-shadow: inset 3px 0 0 var(--hot); }
-.work.prio-2 { box-shadow: inset 3px 0 0 var(--warn); }
-.work.prio-3 { box-shadow: inset 3px 0 0 var(--line); }
-.work.done { box-shadow: inset 3px 0 0 var(--line); }
-.work.done .prio-chip { opacity: .5; }
+.note {
+  background: var(--paper); color: var(--note-ink);
+  border-radius: 3px 3px 14px 3px; padding: 10px 12px 8px;
+  box-shadow: 0 6px 14px rgba(0,0,0,.45);
+  display: flex; flex-direction: column; min-height: 210px;
+  transform: rotate(-.6deg); transition: transform .15s;
+}
+.note:nth-child(even) { transform: rotate(.7deg); }
+.note:nth-child(3n) { transform: rotate(-.2deg); }
+.note:focus-within, .note:hover { transform: rotate(0) translateY(-2px); }
+.note-tools { display: flex; align-items: center; justify-content: space-between; gap: 6px; opacity: .55; transition: opacity .15s; }
+.note:hover .note-tools, .note:focus-within .note-tools { opacity: 1; }
+.note-del {
+  background: transparent; color: var(--note-ink); padding: 0 6px; font-size: 18px; line-height: 1; border-radius: 6px;
+}
+.note-del.arm { background: var(--note-ink); color: var(--paper); font-size: 12px; padding: 3px 8px; }
+.note-text {
+  flex: 1; min-height: 150px; margin-top: 6px; padding: 2px 0;
+  background: transparent; border: 0; border-radius: 0; resize: vertical;
+  color: var(--note-ink); font-size: 15px; line-height: 1.6;
+}
+.note-text:focus { outline: none; }
+.note-text::placeholder { color: rgba(43, 38, 32, .45); }
+.note-time { font-size: 11px; opacity: .6; text-align: right; font-variant-numeric: tabular-nums; }
+.note-empty { grid-column: 1 / -1; padding: 30px 0; text-align: center; font-size: 14px; }
+.backup { margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .note, .note:nth-child(even), .note:nth-child(3n) { transform: none; transition: none; } }
+.row > label.file-btn { flex: none; }

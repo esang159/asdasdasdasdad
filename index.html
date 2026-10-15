@@ -12,7 +12,7 @@
     <nav class="tabs" role="tablist">
       <button data-tab="home" class="active">대시보드</button>
       <button data-tab="notices">사업공고</button>
-      <button data-tab="todo">할 일 · 메모</button>
+      <button data-tab="memo">메모</button>
     </nav>
     <div class="today-label">
       <div id="weather" class="weather" hidden></div>
@@ -51,11 +51,6 @@
           <form id="workForm" class="inline-form todo-form">
             <input name="title" placeholder="업무 추가" required>
             <input name="due" class="ymd" inputmode="numeric" maxlength="10" placeholder="마감 20261015" aria-label="마감일 (예: 20261015)">
-            <select name="priority" class="prio-select" aria-label="우선순위">
-              <option value="1">높음</option>
-              <option value="2" selected>보통</option>
-              <option value="3">낮음</option>
-            </select>
             <button>추가</button>
           </form>
           <ul id="workList" class="list work-list"></ul>
@@ -119,28 +114,18 @@
       </div>
     </section>
 
-    <!-- 할 일 / 메모 -->
-    <section id="tab-todo" class="tab">
-      <div class="grid2">
-        <div class="card">
-          <h2>할 일</h2>
-          <form id="todoForm" class="inline-form todo-form">
-            <input name="text" placeholder="할 일을 입력하고 Enter" required>
-            <input name="due" class="ymd" inputmode="numeric" maxlength="10" placeholder="마감 20261015" aria-label="마감일 (예: 20261015)">
-            <select name="work" class="work-select" aria-label="연결할 업무"><option value="">업무 없음</option></select>
-            <button>추가</button>
-          </form>
-          <ul id="todoList" class="list"></ul>
-        </div>
-        <div class="card">
-          <h2>메모</h2>
-          <textarea id="memo" rows="16" placeholder="자유롭게 적어두세요. 자동 저장됩니다."></textarea>
-          <p class="meta" id="memoSaved"></p>
-        </div>
+    <!-- 메모 (포스트잇) -->
+    <section id="tab-memo" class="tab">
+      <div class="memo-head">
+        <h2>메모 <small id="noteCount"></small></h2>
+        <div class="note-colors" id="newNoteColors" role="radiogroup" aria-label="새 메모 색"></div>
+        <button type="button" id="addNote">+ 새 메모</button>
       </div>
-      <div class="card">
+      <div id="noteBoard" class="note-board"></div>
+
+      <div class="card backup">
         <h2>데이터 백업</h2>
-        <p class="meta">일정·할 일·메모·관심공고는 이 브라우저에만 저장됩니다. 다른 PC로 옮기려면 내보내기/가져오기를 쓰세요.</p>
+        <p class="meta">일정·할 일·업무·메모·관심공고는 이 브라우저에만 저장됩니다. 다른 PC로 옮기려면 내보내기/가져오기를 쓰세요.</p>
         <div class="row">
           <button id="exportBtn">내보내기 (JSON)</button>
           <label class="file-btn">가져오기 <input type="file" id="importFile" accept="application/json" hidden></label>

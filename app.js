@@ -33,7 +33,8 @@ const state = {
   todos: store.get("todos", null) ?? SETUP_TODOS.map((text, i) => ({ id: "setup" + i, text, due: "", done: false })),
   works: store.get("works", []),     // 진행 중인 업무 {id, title, due, progress 0~100}
   stars: store.get("stars", {}),     // 공고 id -> 공고 사본 (목록에서 빠져도 유지)
-  memo: store.get("memo", ""),
+  memo: store.get("memo", ""),       // 예전 한 칸짜리 메모 (포스트잇으로 옮긴다)
+  notes: store.get("notes", null),   // 포스트잇 {id, text, color, updated}
   notices: [],
   noticeMeta: {},
   cal: { year: 0, month: 0, selected: "" },
@@ -408,42 +409,25 @@ function workProgress(w) {
 }
 const workName = (id) => state.works.find((w) => w.id === id)?.title;
 
-// 우선순위 1=높음 2=보통 3=낮음. 정렬: 진행 중 먼저 → 우선순위 → 직접 정한 순서(▲▼).
-const PRIORITY = { 1: "높음", 2: "보통", 3: "낮음" };
-state.works.forEach((w, i) => { w.priority ??= 2; w.order ??= i; });
+// ★ 표시한 업무가 위로. 정렬: 진행 중 먼저 → ★ → 마감 빠른 순 → 추가한 순.
+state.works.forEach((w, i) => { w.starred ??= w.priority === 1; w.order ??= i; });
 
 function sortedWorks() {
   return state.works.slice().sort((a, b) =>
-    (workProgress(a) >= 100) - (workProgress(b) >= 100) || a.priority - b.priority || a.order - b.order);
-}
-
-function moveWork(id, dir) {
-  const list = sortedWorks();
-  const i = list.findIndex((w) => w.id === id);
-  const other = list[i + dir];
-  const w = list[i];
-  // 같은 우선순위·같은 상태(진행 중/완료) 안에서만 자리를 바꾼다
-  if (!other || other.priority !== w.priority || (workProgress(other) >= 100) !== (workProgress(w) >= 100)) return;
-  [w.order, other.order] = [other.order, w.order];
-  store.set("works", state.works);
-  renderWorks();
+    (workProgress(a) >= 100) - (workProgress(b) >= 100) || (b.starred ? 1 : 0) - (a.starred ? 1 : 0)
+    || (a.due || "9999").localeCompare(b.due || "9999") || a.order - b.order);
 }
 
 function renderWorks() {
   const list = sortedWorks();
   const active = state.works.filter((w) => workProgress(w) < 100).length;
   $("#workCount").textContent = state.works.length ? `(${active}건 진행 중)` : "";
-  const sameGroup = (a, b) => a && b && a.priority === b.priority && (workProgress(a) >= 100) === (workProgress(b) >= 100);
-  $("#workList").innerHTML = list.length ? list.map((w, i) => {
+  $("#workList").innerHTML = list.length ? list.map((w) => {
     const pr = workProgress(w), done = pr >= 100, ts = workTodos(w), auto = ts.length > 0;
     return `
-    <li class="work prio-${w.priority} ${done ? "done" : ""}">
+    <li class="work ${done ? "done" : ""}">
       <div class="work-top">
-        <span class="order-btns">
-          <button class="step mini" data-work-move="-1" data-id="${w.id}" aria-label="위로" ${sameGroup(w, list[i - 1]) ? "" : "disabled"}>▲</button>
-          <button class="step mini" data-work-move="1" data-id="${w.id}" aria-label="아래로" ${sameGroup(w, list[i + 1]) ? "" : "disabled"}>▼</button>
-        </span>
-        <button class="prio-chip p${w.priority}" data-work-prio="${w.id}" title="눌러서 우선순위 바꾸기">${PRIORITY[w.priority]}</button>
+        <button class="star work-star ${w.starred ? "on" : ""}" data-work-star="${w.id}" title="중요 표시 (위로 올리기)" aria-pressed="${!!w.starred}">${w.starred ? "★" : "☆"}</button>
         <span class="grow">${esc(w.title)}</span>
         ${w.due ? (done ? `<span class="meta due">${esc(w.due.replace(/-/g, "."))}</span>` : ddayBadge(w.due)) : ""}
         <button class="icon" data-work-del="${w.id}" title="업무 삭제">×</button>
@@ -486,7 +470,7 @@ $("#workForm").addEventListener("submit", (e) => {
   const due = readYmd(f.due, false);
   if (due === undefined) return;
   const order = Math.max(0, ...state.works.map((w) => w.order + 1));
-  state.works.push({ id: uid(), title: f.title.value.trim(), due, progress: 0, priority: Number(f.priority.value) || 2, order });
+  state.works.push({ id: uid(), title: f.title.value.trim(), due, progress: 0, starred: false, order });
   store.set("works", state.works);
   f.title.value = ""; f.due.value = "";
   renderWorks();
@@ -501,12 +485,9 @@ $("#workList").addEventListener("click", (e) => {
     // 업무를 지워도 할 일은 남기고 연결만 끊는다
     for (const t of state.todos) if (t.workId === id) delete t.workId;
     store.set("todos", state.todos);
-  } else if (b.dataset.workMove) {
-    moveWork(b.dataset.id, Number(b.dataset.workMove));
-    return;
-  } else if (b.dataset.workPrio) {
-    const w = state.works.find((x) => x.id === b.dataset.workPrio);
-    if (w) { w.priority = (w.priority % 3) + 1; w.order = Math.max(0, ...state.works.map((x) => x.order + 1)); }
+  } else if (b.dataset.workStar) {
+    const w = state.works.find((x) => x.id === b.dataset.workStar);
+    if (w) w.starred = !w.starred;
   } else if (b.dataset.workStep) {
     const w = state.works.find((x) => x.id === b.dataset.id);
     if (w) w.progress = Math.max(0, Math.min(100, w.progress + Number(b.dataset.workStep)));
@@ -542,10 +523,6 @@ function todoListHTML() {
     </li>`).join("") : `<li class="empty">할 일이 없습니다.</li>`;
 }
 
-function renderTodos() {
-  $("#todoList").innerHTML = todoListHTML();
-}
-
 function toggleTodo(id) {
   const t = state.todos.find((x) => x.id === id);
   if (t) t.done = !t.done;
@@ -564,10 +541,10 @@ function addTodoFrom(form) {
   form.text.focus();
 }
 
-for (const sel of ["#todoForm", "#homeTodoForm"]) {
+for (const sel of ["#homeTodoForm"]) {
   $(sel).addEventListener("submit", (e) => { e.preventDefault(); addTodoFrom(e.target); });
 }
-for (const sel of ["#todoList", "#homeTodo"]) {
+for (const sel of ["#homeTodo"]) {
   $(sel).addEventListener("click", (e) => {
     if (e.target.dataset.todo) toggleTodo(e.target.dataset.todo);
     if (e.target.dataset.todoDel) {
@@ -578,15 +555,93 @@ for (const sel of ["#todoList", "#homeTodo"]) {
   });
 }
 
-let memoTimer;
-$("#memo").value = state.memo;
-$("#memo").addEventListener("input", (e) => {
-  clearTimeout(memoTimer);
-  memoTimer = setTimeout(() => {
-    state.memo = e.target.value;
-    store.set("memo", state.memo);
-    $("#memoSaved").textContent = "저장됨 " + new Date().toLocaleTimeString("ko-KR");
+// ---------------------------------------------------------------- 메모 (포스트잇)
+// 쓰는 동안에는 다시 그리지 않고(커서 유지) 저장만, 추가·삭제·색 변경 때만 보드를 다시 그린다.
+
+const NOTE_COLORS = ["yellow", "peach", "pink", "mint", "sky", "lavender"];
+const NOTE_COLOR_NAMES = { yellow: "노랑", peach: "살구", pink: "분홍", mint: "민트", sky: "하늘", lavender: "라벤더" };
+if (!Array.isArray(state.notes)) {
+  state.notes = state.memo.trim() ? [{ id: uid(), text: state.memo, color: "yellow", updated: new Date().toISOString() }] : [];
+  store.set("notes", state.notes);
+}
+let newNoteColor = store.get("noteColor", "yellow");
+
+function noteTime(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function renderNoteColors() {
+  $("#newNoteColors").innerHTML = NOTE_COLORS.map((c) =>
+    `<button type="button" class="swatch n-${c} ${c === newNoteColor ? "on" : ""}" data-new-color="${c}" role="radio" aria-checked="${c === newNoteColor}" title="${NOTE_COLOR_NAMES[c]}"></button>`).join("");
+}
+
+function renderNotes() {
+  $("#noteCount").textContent = state.notes.length ? `(${state.notes.length}개)` : "";
+  $("#noteBoard").innerHTML = state.notes.length ? state.notes.map((n) => `
+    <div class="note n-${n.color}" data-note="${n.id}">
+      <div class="note-tools">
+        <span class="note-swatches">${NOTE_COLORS.map((c) =>
+          `<button type="button" class="swatch mini n-${c} ${c === n.color ? "on" : ""}" data-note-color="${c}" title="${NOTE_COLOR_NAMES[c]}"></button>`).join("")}</span>
+        <button type="button" class="note-del" data-note-del title="메모 삭제">×</button>
+      </div>
+      <textarea class="note-text" placeholder="여기에 적으세요" aria-label="메모 내용">${esc(n.text)}</textarea>
+      <div class="note-time">${esc(noteTime(n.updated))}</div>
+    </div>`).join("") : `<p class="meta note-empty">아직 메모가 없어요. <b>+ 새 메모</b>를 눌러 시작해 보세요.</p>`;
+}
+
+function saveNotes() { store.set("notes", state.notes); }
+
+$("#addNote").addEventListener("click", () => {
+  state.notes.unshift({ id: uid(), text: "", color: newNoteColor, updated: new Date().toISOString() });
+  saveNotes();
+  renderNotes();
+  $("#noteBoard .note-text")?.focus();
+});
+$("#newNoteColors").addEventListener("click", (e) => {
+  const c = e.target.dataset.newColor;
+  if (!c) return;
+  newNoteColor = c;
+  store.set("noteColor", c);
+  renderNoteColors();
+});
+
+const noteTimers = {};
+$("#noteBoard").addEventListener("input", (e) => {
+  if (!e.target.classList.contains("note-text")) return;
+  const el = e.target.closest(".note");
+  const n = state.notes.find((x) => x.id === el.dataset.note);
+  if (!n) return;
+  n.text = e.target.value;
+  n.updated = new Date().toISOString();
+  clearTimeout(noteTimers[n.id]);
+  noteTimers[n.id] = setTimeout(() => {
+    saveNotes();
+    el.querySelector(".note-time").textContent = "저장됨 · " + noteTime(n.updated);
   }, 400);
+});
+$("#noteBoard").addEventListener("click", (e) => {
+  const el = e.target.closest(".note");
+  if (!el) return;
+  const n = state.notes.find((x) => x.id === el.dataset.note);
+  if (!n) return;
+  if (e.target.dataset.noteColor) {
+    n.color = e.target.dataset.noteColor;
+    saveNotes();
+    renderNotes();
+  } else if ("noteDel" in e.target.dataset) {
+    // 한 번 누르면 "삭제?"로 바뀌고, 3초 안에 다시 누르면 지운다
+    const btn = e.target;
+    if (!btn.classList.contains("arm")) {
+      btn.classList.add("arm");
+      btn.textContent = "삭제?";
+      setTimeout(() => { if (btn.isConnected) { btn.classList.remove("arm"); btn.textContent = "×"; } }, 3000);
+      return;
+    }
+    state.notes = state.notes.filter((x) => x.id !== n.id);
+    saveNotes();
+    renderNotes();
+  }
 });
 
 // ---------------------------------------------------------------- Claude 검색창
@@ -608,7 +663,8 @@ function pageContext() {
     .filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; })
     .slice(0, 60)
     .map((n) => `- [${n.id}] ${n.title} | ${n.org || ""} | ${n.kind || "지원사업"} | 지역 ${(n.regions || []).join(",") || "전국"} | 대상 ${n.target || "-"} | 접수 ${n.start || "?"}~${n.end || "?"}${state.stars[n.id] ? " | ★관심" : ""}`);
-  const works = sortedWorks().filter((w) => workProgress(w) < 100).map((w) => `- [우선순위 ${PRIORITY[w.priority]}] ${w.title} (진행률 ${workProgress(w)}%${w.due ? ", 마감 " + w.due : ""})`);
+  const works = sortedWorks().filter((w) => workProgress(w) < 100).map((w) => `- ${w.starred ? "★ " : ""}${w.title} (진행률 ${workProgress(w)}%${w.due ? ", 마감 " + w.due : ""})`);
+  const notes = state.notes.filter((n) => n.text.trim()).slice(0, 20).map((n) => `- ${n.text.trim().replace(/\s+/g, " ").slice(0, 200)}`);
   return `오늘: ${today} (${new Date().toLocaleDateString("ko-KR", { weekday: "long" })})
 
 [앞으로 30일 일정]
@@ -616,6 +672,9 @@ ${soon.join("\n") || "(없음)"}
 
 [진행 중인 업무]
 ${works.join("\n") || "(없음)"}
+
+[메모]
+${notes.join("\n") || "(없음)"}
 
 [남은 할 일]
 ${todos.join("\n") || "(없음)"}
@@ -751,7 +810,7 @@ $("#askClose").addEventListener("click", () => { askCtl?.abort(); $("#askPanel")
 // ---------------------------------------------------------------- 백업
 
 $("#exportBtn").addEventListener("click", () => {
-  const data = { events: state.events, todos: state.todos, works: state.works, stars: state.stars, memo: state.memo };
+  const data = { events: state.events, todos: state.todos, works: state.works, stars: state.stars, notes: state.notes };
   const blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -765,10 +824,12 @@ $("#importFile").addEventListener("change", async (e) => {
   try {
     const data = JSON.parse(await file.text());
     if (!confirm("현재 데이터를 백업 파일 내용으로 바꿀까요?")) return;
-    for (const k of ["events", "todos", "works", "stars", "memo"]) {
+    if (data.notes === undefined && typeof data.memo === "string" && data.memo.trim()) {
+      data.notes = [{ id: uid(), text: data.memo, color: "yellow", updated: new Date().toISOString() }];
+    }
+    for (const k of ["events", "todos", "works", "stars", "notes"]) {
       if (data[k] !== undefined) { state[k] = data[k]; store.set(k, data[k]); }
     }
-    $("#memo").value = state.memo;
     renderAll();
   } catch {
     alert("올바른 백업 파일이 아닙니다.");
@@ -832,7 +893,7 @@ function renderAll() {
   renderHome();
   renderCalendar();
   renderNotices();
-  renderTodos();
+  renderNotes();
 }
 
 (function init() {
@@ -842,6 +903,7 @@ function renderAll() {
   resetEventForm();
   const tab = location.hash.slice(1) || store.get("tab", "home");
   showTab(document.getElementById("tab-" + tab) ? tab : "home");
+  renderNoteColors();
   renderAll();
   loadNotices();
   loadWeather();
