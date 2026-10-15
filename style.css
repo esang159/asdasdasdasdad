@@ -7,93 +7,37 @@
   font-display: swap;
 }
 
-/* 바탕은 거의 무채색(아주 살짝 따뜻한 회색), 따뜻함은 강조색 하나(부드러운 코랄)로만.
-   버튼은 차콜, 링크는 본문색으로 두어 페이지 전체가 물든 느낌이 나지 않게 한다. */
+/* 검정 바탕 한 가지 테마. 카드는 살짝 밝은 먹색, 따뜻함은 코랄 강조색 하나로만. */
 :root {
-  --bg: #f7f6f3;
-  --card: #ffffff;
-  --text: #262320;
-  --muted: #77716a;
-  --line: #e7e3dd;
-  --primary: #2d2925;
-  --on-primary: #ffffff;
-  --accent: #cc6a45;
-  --accent-soft: #fbefe9;
-  --on-accent: #ffffff;
-  --link: #262320;
-  --danger: #c2413a;
+  --bg: #000000;
+  --card: #141312;
+  --text: #ece9e4;
+  --muted: #9d978f;
+  --line: #2a2724;
+  --primary: #ece9e4;
+  --on-primary: #141312;
+  --accent: #e8875f;
+  --accent-soft: #33231b;
+  --on-accent: #141312;
+  --link: #ece9e4;
+  --danger: #ec8a80;
   --c-work: #4a76b0;
   --c-meeting: #8662b5;
   --c-deadline: #d0603e;
   --c-personal: #3f8a5f;
   --claude: #d97757;
-  --support: #3d8a5e;
-  --support-soft: #e3f2e8;
-  --rnd: #6b58b8;
-  --rnd-soft: #ece8fa;
-  --hot: #c2502f;
-  --hot-soft: #fce8e1;
-  --warn: #9a6a0e;
-  --warn-soft: #fbf0d6;
-  --danger-soft: #fbe2df;
-  --star: #e0a21a;
-  --shadow: rgba(40, 30, 20, .10);
-  --backdrop: rgba(25, 20, 15, .45);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #191817;
-    --card: #22201e;
-    --text: #ece9e4;
-    --muted: #a39d95;
-    --line: #36322e;
-    --primary: #ece9e4;
-    --on-primary: #1c1a18;
-    --accent: #e8875f;
-    --accent-soft: #3b2a22;
-    --on-accent: #1c1a18;
-    --link: #ece9e4;
-    --danger: #ec8a80;
-    --support: #7fcb9b;
-    --support-soft: #203327;
-    --rnd: #ae9cf0;
-    --rnd-soft: #2c2742;
-    --hot: #f0a089;
-    --hot-soft: #3d2620;
-    --warn: #e8c06e;
-    --warn-soft: #3a2f16;
-    --danger-soft: #40221f;
-    --star: #efbe4e;
-    --shadow: rgba(0, 0, 0, .35);
-    --backdrop: rgba(0, 0, 0, .55);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #191817;
-  --card: #22201e;
-  --text: #ece9e4;
-  --muted: #a39d95;
-  --line: #36322e;
-  --primary: #ece9e4;
-  --on-primary: #1c1a18;
-  --accent: #e8875f;
-  --accent-soft: #3b2a22;
-  --on-accent: #1c1a18;
-  --link: #ece9e4;
-  --danger: #ec8a80;
   --support: #7fcb9b;
-  --support-soft: #203327;
+  --support-soft: #1b2c21;
   --rnd: #ae9cf0;
-  --rnd-soft: #2c2742;
+  --rnd-soft: #262139;
   --hot: #f0a089;
-  --hot-soft: #3d2620;
+  --hot-soft: #38221b;
   --warn: #e8c06e;
-  --warn-soft: #3a2f16;
-  --danger-soft: #40221f;
+  --warn-soft: #332912;
+  --danger-soft: #3a1e1b;
   --star: #efbe4e;
-  --shadow: rgba(0, 0, 0, .35);
-  --backdrop: rgba(0, 0, 0, .55);
+  --shadow: rgba(0, 0, 0, .6);
+  --backdrop: rgba(0, 0, 0, .65);
   color-scheme: dark;
 }
 
