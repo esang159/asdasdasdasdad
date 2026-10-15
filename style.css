@@ -75,9 +75,6 @@ a:hover { text-decoration: underline; }
 .weather { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; justify-content: flex-end; }
 .weather .w-off { color: var(--muted); }
 @media (max-width: 600px) { .today-label { align-items: stretch; text-align: left; width: 100%; } .weather { justify-content: flex-start; } }
-.weather .w-city { font-weight: 600; color: var(--text); }
-.weather .w-day { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); }
-.weather .w-day b { color: var(--text); font-weight: 600; }
 .weather .w-temp, .weather .w-pop { font-variant-numeric: tabular-nums; }
 .weather .w-pop.wet { color: var(--accent); font-weight: 600; }
 
@@ -473,3 +470,16 @@ body.hub-mode > header, body.hub-mode > main { display: none; }
 /* 대시보드 왼쪽 위 이름 = 서비스 선택으로 돌아가는 버튼 */
 button.brand { background: none; border: 0; padding: 0; color: var(--text); font: inherit; font-weight: 700; font-size: 16px; cursor: pointer; }
 button.brand:hover { color: var(--accent); }
+
+/* 헤더 날씨: 날짜마다 작은 칸 */
+.weather .w-day {
+  display: grid; grid-template-columns: auto auto; align-items: center;
+  column-gap: 12px; row-gap: 1px; padding: 6px 12px 5px;
+  border-radius: 12px; background: var(--bg); border: 1px solid var(--line);
+}
+.weather .w-icon { font-size: 22px; line-height: 1; justify-self: center; }
+.weather .w-temp { font-size: 14px; font-weight: 600; color: var(--text); justify-self: end; }
+.weather .w-temp small { font-size: 11px; font-weight: 400; color: var(--muted); }
+.weather .w-label { color: var(--muted); font-size: 11px; justify-self: center; }
+.weather .w-pop { font-size: 11px; color: var(--muted); justify-self: end; }
+.weather .w-when { grid-column: 1 / -1; justify-self: center; font-size: 11px; font-weight: 600; color: var(--text); margin-top: 2px; }

@@ -899,6 +899,20 @@ function weatherLabel(code) {
   return "-";
 }
 
+function weatherIcon(code) {
+  if (code === 0) return "☀️";
+  if (code === 1) return "🌤️";
+  if (code === 2) return "⛅";
+  if (code === 3) return "☁️";
+  if (code === 45 || code === 48) return "🌫️";
+  if (code >= 51 && code <= 57) return "🌦️";
+  if (code >= 61 && code <= 67) return "🌧️";
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "🌨️";
+  if (code >= 80 && code <= 82) return "🌦️";
+  if (code >= 95) return "⛈️";
+  return "🌡️";
+}
+
 async function loadWeather() {
   let data = null;
   for (const url of [WEATHER_URL, "data/weather.json"]) {
@@ -910,7 +924,7 @@ async function loadWeather() {
   const d = data?.daily;
   const el = $("#weather");
   if (!d?.time?.length) {
-    el.innerHTML = `<span class="w-city">서울</span><span class="w-off">날씨를 불러오지 못했어요</span>`;
+    el.innerHTML = `<span class="w-off">날씨를 불러오지 못했어요</span>`;
     el.hidden = false;
     return;
   }
@@ -919,12 +933,15 @@ async function loadWeather() {
     t, code: d.weather_code[i], hi: d.temperature_2m_max[i], lo: d.temperature_2m_min[i], pop: d.precipitation_probability_max[i],
   })).filter((x) => x.t >= today).slice(0, 2);
   if (!days.length) return;
-  el.innerHTML = `<span class="w-city">서울</span>` + days.map((x) => `
-    <span class="w-day" title="${esc(x.t)}">
-      <b>${x.t === today ? "오늘" : "내일"}</b> ${esc(weatherLabel(x.code))}
-      <span class="w-temp">${Math.round(x.hi)}°/${Math.round(x.lo)}°</span>
+  // 한 날짜 = 작은 칸 하나:  [아이콘] [최고/최저] / [날씨] [강수] / 오늘
+  el.innerHTML = days.map((x) => `
+    <div class="w-day" title="서울 ${esc(x.t)}">
+      <span class="w-icon" aria-hidden="true">${weatherIcon(x.code)}</span>
+      <span class="w-temp">${Math.round(x.hi)}°<small>/${Math.round(x.lo)}°</small></span>
+      <span class="w-label">${esc(weatherLabel(x.code))}</span>
       <span class="w-pop ${x.pop >= 60 ? "wet" : ""}">강수 ${x.pop ?? "-"}%</span>
-    </span>`).join("");
+      <span class="w-when">${x.t === today ? "오늘" : "내일"}</span>
+    </div>`).join("");
   el.hidden = false;
 }
 
