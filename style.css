@@ -412,7 +412,7 @@ body.locked > header, body.locked > main { display: none; }
   width: min(360px, 100%); padding: 32px 28px 28px;
   background: var(--card); border: 1px solid var(--line); border-radius: 16px;
 }
-.gate-brand { margin: 0 0 26px; font-size: 30px; letter-spacing: -.01em; text-align: center; }
+.gate-brand { margin: 4px 0 30px; text-align: center; font-weight: 400; }
 .gate-wait { color: var(--muted); }
 .gate form button { width: 100%; padding: 10px; }
 .gate .login-msg { min-height: 1.2em; margin: 0; color: var(--danger); font-size: 13px; }
@@ -426,7 +426,7 @@ body.hub-mode > header, body.hub-mode > main { display: none; }
   padding: 56px max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px));
 }
 .hub-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 36px; flex-wrap: wrap; }
-.hub-brand { margin: 0; font-size: 30px; letter-spacing: -.01em; }
+.hub-brand { margin: 0; font-weight: 400; }
 .hub-user { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
 .hub-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 @media (max-width: 860px) { .hub-grid { grid-template-columns: 1fr; } .hub { padding-top: 32px; } }
@@ -487,3 +487,16 @@ button.brand:hover { color: var(--accent); }
   .head-info { margin-left: 0; align-items: flex-start; width: 100%; }
   .today-label { align-items: flex-start; }
 }
+
+/* 로고: 마루 부리, 넓은 자간의 SOL WORKS + 가는 선 · 별 · 가는 선 */
+.logo { display: inline-flex; flex-direction: column; align-items: center; color: var(--text); font-family: "MaruBuri", serif; font-weight: 400; line-height: 1; }
+.logo-word { letter-spacing: var(--ls); margin-right: calc(-1 * var(--ls)); white-space: nowrap; }   /* 마지막 글자 뒤 자간만큼 당겨 가운데 맞춤 */
+.logo-gap { display: inline-block; width: var(--gap); }
+.logo-orn { display: flex; align-items: center; gap: var(--orn-gap); width: 100%; margin-top: var(--orn-top); }
+.logo-orn i { flex: 1; height: 1px; background: currentColor; opacity: .55; }
+.logo-star { width: var(--star); height: var(--star); fill: currentColor; flex: none; }
+.logo-lg { --ls: .55em; --gap: .7em; --orn-gap: 14px; --orn-top: 16px; --star: 18px; font-size: 26px; }
+.logo-md { --ls: .5em; --gap: .6em; --orn-gap: 10px; --orn-top: 11px; --star: 13px; font-size: 19px; }
+.logo-sm { --ls: .35em; --gap: .45em; font-size: 14px; }
+@media (max-width: 600px) { .logo-lg { font-size: 22px; } }
+button.brand:hover .logo { color: var(--accent); }

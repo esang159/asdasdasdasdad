@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sol Works</title>
-  <link rel="stylesheet" href="style.css?v=20261015k">
+  <link rel="stylesheet" href="style.css?v=20261015l">
 </head>
 <body class="locked hub-mode">
   <!-- 로그인 페이지: 로그인하기 전에는 이것만 보인다 -->
   <section id="gate" class="gate" aria-labelledby="gateTitle">
     <div class="gate-card">
-      <h1 id="gateTitle" class="gate-brand">Sol Works</h1>
+      <h1 id="gateTitle" class="gate-brand" aria-label="Sol Works"><span class="logo logo-lg"><span class="logo-word">SOL<span class="logo-gap"></span>WORKS</span><span class="logo-orn" aria-hidden="true"><i></i><svg class="logo-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C12.7 8 16 11.3 23 12C16 12.7 12.7 16 12 23C11.3 16 8 12.7 1 12C8 11.3 11.3 8 12 1Z"/></svg><i></i></span></span></h1>
       <p class="gate-wait" id="gateWait">불러오는 중…</p>
       <form id="loginForm" class="stack" hidden>
         <label>아이디 <input name="id" autocomplete="username" required></label>
@@ -28,7 +28,7 @@
   <!-- 서비스 선택: 로그인하면 먼저 보이는 화면 -->
   <section id="hub" class="hub" aria-labelledby="hubTitle">
     <div class="hub-top">
-      <h1 id="hubTitle" class="hub-brand">Sol Works</h1>
+      <h1 id="hubTitle" class="hub-brand" aria-label="Sol Works"><span class="logo logo-md"><span class="logo-word">SOL<span class="logo-gap"></span>WORKS</span><span class="logo-orn" aria-hidden="true"><i></i><svg class="logo-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1C12.7 8 16 11.3 23 12C16 12.7 12.7 16 12 23C11.3 16 8 12.7 1 12C8 11.3 11.3 8 12 1Z"/></svg><i></i></span></span></h1>
       <div class="hub-user">
         <span id="hubUser"></span>
         <button type="button" class="ghost sync-btn" id="hubLogout">로그아웃</button>
@@ -64,7 +64,7 @@
   </section>
 
   <header class="topbar">
-    <button type="button" class="brand" id="toHub" title="서비스 선택으로">Sol Works</button>
+    <button type="button" class="brand" id="toHub" title="서비스 선택으로" aria-label="Sol Works · 서비스 선택으로"><span class="logo logo-sm"><span class="logo-word">SOL<span class="logo-gap"></span>WORKS</span></span></button>
     <nav class="tabs" role="tablist">
       <button data-tab="home" class="active">대시보드</button>
       <button data-tab="notices">사업공고</button>
@@ -234,7 +234,7 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=20261015k"></script>
-  <script type="module" src="sync.js?v=20261015k" onerror="window.solSyncFailed && window.solSyncFailed('스크립트를 불러오지 못했어요')"></script>
+  <script src="app.js?v=20261015l"></script>
+  <script type="module" src="sync.js?v=20261015l" onerror="window.solSyncFailed && window.solSyncFailed('스크립트를 불러오지 못했어요')"></script>
 </body>
 </html>
