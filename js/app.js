@@ -2,16 +2,6 @@
 // 개인 데이터는 브라우저 localStorage 에 저장되고, 공고는 data/notices.json 에서 읽는다.
 
 const KINDS = { work: "업무", meeting: "회의", deadline: "마감", personal: "개인" };
-// 처음 열었을 때 할 일 목록에 넣어두는 설정 작업
-const SETUP_TODOS = [
-  "[설정] claude.ai에서 GitHub 다시 연결 (Claude가 저장소에 올릴 수 있게)",
-  "[설정] 기업마당 API 인증키 발급 (bizinfo.go.kr → 정책정보 개방)",
-  "[설정] 공공데이터포털에서 K-Startup 사업공고 조회서비스 활용신청",
-  "[설정] GitHub 저장소 Secrets에 BIZINFO_API_KEY, DATA_GO_KR_KEY 등록",
-  "[설정] GitHub Actions에서 '사업공고 수집' 한 번 수동 실행",
-  "[설정] GitHub Pages 켜기 (Settings → Pages)",
-  "[설정] 관심 업종·지역·키워드를 Claude에게 알려주기",
-];
 const KIND_COLOR = { work: "var(--c-work)", meeting: "var(--c-meeting)", deadline: "var(--c-deadline)", personal: "var(--c-personal)" };
 
 // ---------------------------------------------------------------- 저장소
@@ -38,7 +28,8 @@ const SYNC_KEYS = ["events", "todos", "works", "notes", "stars", "noticeMemos"];
 
 const state = {
   events: store.get("events", []),
-  todos: store.get("todos", null) ?? SETUP_TODOS.map((text, i) => ({ id: "setup" + i, text, due: "", done: false })),
+  // 처음엔 비워 둔다. (예전엔 설정 안내를 넣어 뒀는데, 새 기기에서 로그인하면 계정 할 일에 다시 합쳐지는 문제가 있었다)
+  todos: store.get("todos", []),
   works: store.get("works", []),     // 진행 중인 업무 {id, title, due, progress 0~100}
   stars: store.get("stars", {}),     // 공고 id -> 공고 사본 (목록에서 빠져도 유지)
   noticeMemos: store.get("noticeMemos", {}),   // 공고 id -> {text, updated, title, url, end, kind}
