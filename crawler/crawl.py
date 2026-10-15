@@ -159,7 +159,10 @@ def fetch_kstartup(cfg: dict) -> list[dict]:
     if not key:
         print("[kstartup] DATA_GO_KR_KEY 없음 - 건너뜀")
         return []
-    # 공공데이터포털 키는 이미 인코딩된 형태로 발급되는 경우가 있어 그대로 붙인다.
+    # 공공데이터포털 키는 Encoding(이미 %xx 로 바뀐 것)과 Decoding(+ / = 가 그대로인 것) 두 가지로
+    # 발급된다. 어느 쪽을 넣어도 되도록 Decoding 키만 인코딩해서 붙인다.
+    if "%" not in key:
+        key = urllib.parse.quote(key, safe="")
     per_page = cfg.get("per_page", 200)
     rows = []
     for page in range(1, cfg.get("max_pages", 20) + 1):
