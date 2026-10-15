@@ -15,6 +15,10 @@
       <button data-tab="memo">메모</button>
       <button data-tab="backup">백업</button>
     </nav>
+    <div class="sync" id="syncBox" hidden>
+      <span class="sync-status" id="syncStatus"></span>
+      <button type="button" class="ghost sync-btn" id="syncBtn">구글로 로그인</button>
+    </div>
     <div class="today-label">
       <div id="weather" class="weather" hidden></div>
       <span id="todayLabel"></span>
@@ -173,5 +177,6 @@
   </dialog>
 
   <script src="app.js"></script>
+  <script type="module" src="sync.js"></script>
 </body>
 </html>

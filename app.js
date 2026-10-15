@@ -25,8 +25,16 @@ const store = {
   },
   set(key, value) {
     try { localStorage.setItem("mwp." + key, JSON.stringify(value)); } catch { /* 저장 불가 환경 */ }
+    // 로그인해 있으면 같은 내용을 클라우드(Firebase)에도 올린다 (sync.js)
+    if (SYNC_KEYS.includes(key)) window.solSync?.push(key, value);
+  },
+  has(key) {
+    try { return localStorage.getItem("mwp." + key) != null; } catch { return false; }
   },
 };
+
+// 기기 사이에 동기화하는 데이터. 탭·필터 같은 화면 설정은 기기마다 따로 둔다.
+const SYNC_KEYS = ["events", "todos", "works", "notes", "stars"];
 
 const state = {
   events: store.get("events", []),
@@ -907,6 +915,24 @@ function renderAll() {
   renderNotices();
   renderNotes();
 }
+
+// sync.js 가 클라우드에서 받은 데이터를 화면에 반영할 때 쓰는 입구
+window.solApp = {
+  SYNC_KEYS,
+  get(key) { return state[key]; },
+  hasLocal(key) { return store.has(key); },
+  apply(key, value) {
+    state[key] = value;
+    try { localStorage.setItem("mwp." + key, JSON.stringify(value)); } catch { /* 저장 불가 환경 */ }
+    if (key === "works") state.works.forEach((w, i) => { w.starred ??= false; w.order ??= i; });
+    // 메모를 쓰는 중이면 메모 보드는 다시 그리지 않는다 (커서가 날아가지 않게)
+    const typing = document.activeElement?.classList?.contains("note-text");
+    renderHome();
+    renderCalendar();
+    renderNotices();
+    if (!typing) renderNotes();
+  },
+};
 
 (function init() {
   const t = new Date();

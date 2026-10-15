@@ -388,3 +388,12 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .backup { max-width: 640px; }
 @media (prefers-reduced-motion: reduce) { .note, .note:nth-child(even), .note:nth-child(3n) { transform: none; transition: none; } }
 .row > label.file-btn { flex: none; }
+
+/* 동기화 로그인 */
+.sync { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; }
+.sync:not([hidden]) + .today-label { margin-left: 0; }
+.sync-status { color: var(--muted); white-space: nowrap; }
+.sync-status.ok::before { content: "●"; color: var(--support); margin-right: 4px; font-size: 9px; vertical-align: 1px; }
+.sync-status.err { color: var(--danger); }
+.sync-btn { padding: 5px 12px; font-size: 12px; }
+@media (max-width: 600px) { .sync { margin-left: 0; width: 100%; } }
