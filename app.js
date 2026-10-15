@@ -935,6 +935,10 @@ window.solApp = {
   SYNC_KEYS,
   get(key) { return state[key]; },
   hasLocal(key) { return store.has(key); },
+  // 로그아웃하면 이 기기 화면에서 내 데이터를 지운다 (클라우드에는 그대로 남아 다시 로그인하면 돌아온다)
+  clearSynced() {
+    for (const key of SYNC_KEYS) this.apply(key, key === "stars" ? {} : []);
+  },
   apply(key, value) {
     state[key] = value;
     try { localStorage.setItem("mwp." + key, JSON.stringify(value)); } catch { /* 저장 불가 환경 */ }

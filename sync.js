@@ -110,6 +110,16 @@ onAuthStateChanged(auth, (u) => {
   unsubs = [];
   user = u;
   nudge.hidden = !!u || localStorage.getItem("mwp.nudgeLater") === "1";
+  const lastUid = localStorage.getItem("mwp.lastUid");
+  if (!u && lastUid) {
+    // 로그아웃(또는 로그인 만료): 화면과 이 기기에 남은 사본을 비운다.
+    // 다음 로그인 때 로그아웃 중에 적은 것도 합쳐지도록 '첫 동기화' 표시를 지운다.
+    Object.values(timers).forEach(clearTimeout);
+    solApp.clearSynced();
+    localStorage.removeItem("mwp.lastUid");
+    localStorage.removeItem("mwp.synced." + lastUid);
+  }
+  if (u) localStorage.setItem("mwp.lastUid", u.uid);
   if (u) {
     btn.textContent = "로그아웃";
     btn.title = toId(u.email) + " 로그인 중";
@@ -184,7 +194,7 @@ $("#loginClose").addEventListener("click", () => dlg.close());
 
 btn.addEventListener("click", async () => {
   if (user) {
-    if (confirm("로그아웃할까요? 이 기기의 데이터는 그대로 남아요.")) await signOut(auth);
+    if (confirm("로그아웃할까요? 화면의 내용은 지워지고, 다시 로그인하면 그대로 돌아와요.")) await signOut(auth);
     return;
   }
   login();
