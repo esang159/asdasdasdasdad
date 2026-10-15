@@ -14,6 +14,7 @@
   --text: #ece9e4;
   --muted: #9d978f;
   --line: #2a2724;
+  --rule: #5c554e;
   --primary: #ece9e4;
   --on-primary: #141312;
   --accent: #e8875f;
@@ -90,7 +91,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
 }
 .card h2 {
   font-size: 16px; margin: 0 0 14px; padding-bottom: 10px;
-  border-bottom: 1px solid var(--line); letter-spacing: -.01em;
+  border-bottom: 1.5px solid var(--rule); letter-spacing: -.01em;
 }
 .card h2 small { font-size: 12px; }
 .cal-head h2 { border-bottom: 0; padding-bottom: 0; }
@@ -314,3 +315,10 @@ input.ymd { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 .work-todo-form input { border: 0; border-bottom: 1px dashed var(--line); border-radius: 0; padding: 4px 4px; font-size: 13px; background: transparent; }
 .work-todo-form input:focus { outline: none; border-bottom-color: var(--accent); }
 input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
+
+/* 대시보드 목록은 일정 높이까지만 보이고 그 이상은 휠로 내려 본다 */
+#homeTodo, #workList { max-height: 360px; overflow-y: auto; }
+#homeNew { max-height: 300px; overflow-y: auto; }
+#homeTodo, #workList, #homeNew { padding-right: 6px; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--rule) transparent; }
+#homeTodo::-webkit-scrollbar, #workList::-webkit-scrollbar, #homeNew::-webkit-scrollbar { width: 6px; }
+#homeTodo::-webkit-scrollbar-thumb, #workList::-webkit-scrollbar-thumb, #homeNew::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
