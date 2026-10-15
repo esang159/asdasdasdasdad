@@ -916,18 +916,20 @@ function renderAll() {
   renderNotes();
 }
 
-// 동기화 기능을 못 불러왔을 때 이유를 보여준다 (아무것도 안 보이면 원인을 알 수 없으므로)
+// 로그인 기능(sync.js)을 못 불러오면 로그인 페이지에 이유와 '다시 시도'를 보여준다
 window.solSyncFailed = (why) => {
   if (window.solSync) return;
-  const st = document.getElementById("syncStatus"), btn = document.getElementById("syncBtn");
-  st.textContent = "동기화 사용 불가: " + why;
-  st.className = "sync-status err";
-  btn.hidden = true;
+  document.getElementById("gateWait").hidden = true;
+  document.getElementById("loginForm").hidden = true;
+  document.getElementById("gateFailMsg").textContent = "로그인 서버에 연결하지 못했어요. " + why;
+  document.getElementById("gateFail").hidden = false;
 };
 if (window.claude) {
-  document.getElementById("syncBox").hidden = true;   // claude.ai 미리보기에서는 외부 로그인을 쓸 수 없다
+  // claude.ai 미리보기에서는 외부 로그인을 쓸 수 없어 로그인 없이 보여준다
+  document.body.classList.remove("locked");
+  document.getElementById("syncBox").hidden = true;
 } else {
-  setTimeout(() => window.solSyncFailed("응답이 없어요 (인터넷 연결이나 광고 차단 확장 프로그램 확인)"), 12000);
+  setTimeout(() => window.solSyncFailed("인터넷 연결이나 광고 차단 프로그램을 확인해 주세요."), 12000);
 }
 
 // sync.js 가 클라우드에서 받은 데이터를 화면에 반영할 때 쓰는 입구

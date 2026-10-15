@@ -27,8 +27,7 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache() });   /
 const $ = (s) => document.querySelector(s);
 const solApp = window.solApp;
 const statusEl = $("#syncStatus"), btn = $("#syncBtn");
-const nudge = $("#loginNudge");
-btn.disabled = false;
+const gateWait = $("#gateWait");
 
 let user = null;
 let unsubs = [];
@@ -109,7 +108,11 @@ onAuthStateChanged(auth, (u) => {
   unsubs.forEach((f) => f());
   unsubs = [];
   user = u;
-  nudge.hidden = !!u || localStorage.getItem("mwp.nudgeLater") === "1";
+  // 로그인 전에는 로그인 페이지만, 로그인하면 대시보드를 보여준다
+  document.body.classList.toggle("locked", !u);
+  gateWait.hidden = true;
+  form.hidden = !!u;
+  if (!u) { form.reset(); msg.textContent = ""; setTimeout(() => form.id.focus(), 0); }
   const lastUid = localStorage.getItem("mwp.lastUid");
   if (!u && lastUid) {
     // 로그아웃(또는 로그인 만료): 화면과 이 기기에 남은 사본을 비운다.
@@ -121,13 +124,8 @@ onAuthStateChanged(auth, (u) => {
   }
   if (u) localStorage.setItem("mwp.lastUid", u.uid);
   if (u) {
-    btn.textContent = "로그아웃";
     btn.title = toId(u.email) + " 로그인 중";
     start();
-  } else {
-    btn.textContent = "로그인";
-    btn.title = "로그인하면 다른 기기와 동기화돼요";
-    setStatus("이 기기에만 저장", "");
   }
 });
 
@@ -138,7 +136,7 @@ const toId = (email) => (email || "").replace("@" + ID_DOMAIN, "");
 // Firebase 는 비밀번호 6자 이상만 받는다. 짧은 비밀번호도 쓸 수 있게 뒤에 고정 문자열을 붙여 보낸다.
 const toFirebasePw = (pw) => pw + "::solworks";
 
-const dlg = $("#loginDialog"), form = $("#loginForm"), msg = $("#loginMsg");
+const form = $("#loginForm"), msg = $("#loginMsg");
 const ERRORS = {
   "auth/invalid-credential": "아이디나 비밀번호가 맞지 않아요.",
   "auth/wrong-password": "아이디나 비밀번호가 맞지 않아요.",
@@ -150,13 +148,6 @@ const ERRORS = {
   "auth/operation-not-allowed": "Firebase에서 '이메일/비밀번호' 로그인이 꺼져 있어요.",
   "auth/network-request-failed": "인터넷 연결을 확인해 주세요.",
 };
-
-function login() {
-  msg.textContent = "";
-  form.reset();
-  dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "");
-  form.id.focus();
-}
 
 async function submit(create) {
   const id = form.id.value.trim(), pw = form.pw.value;
@@ -179,7 +170,6 @@ async function submit(create) {
         } else throw e;
       }
     }
-    dlg.close();
   } catch (e) {
     msg.textContent = ERRORS[e.code] || "실패했어요: " + e.code;
   }
@@ -190,17 +180,7 @@ $("#signupBtn").addEventListener("click", () => {
   if (!form.reportValidity()) return;
   submit(true);
 });
-$("#loginClose").addEventListener("click", () => dlg.close());
 
 btn.addEventListener("click", async () => {
-  if (user) {
-    if (confirm("로그아웃할까요? 화면의 내용은 지워지고, 다시 로그인하면 그대로 돌아와요.")) await signOut(auth);
-    return;
-  }
-  login();
-});
-$("#nudgeLogin").addEventListener("click", login);
-$("#nudgeLater").addEventListener("click", () => {
-  localStorage.setItem("mwp.nudgeLater", "1");
-  nudge.hidden = true;
+  if (user && confirm("로그아웃할까요? 다시 로그인하면 그대로 돌아와요.")) await signOut(auth);
 });
