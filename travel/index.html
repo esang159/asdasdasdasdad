@@ -7,7 +7,14 @@
 <script>
   document.documentElement.classList.add("sol-guard");
   window.solGuardFail = function () { location.replace("../?next=" + encodeURIComponent("travel/" + location.hash)); };
-  setTimeout(function () { if (!window.solGuardOk) window.solGuardFail(); }, 15000);
+  // 15초가 지나도 확인이 안 되면(느린 연결) 안내를 띄운다. 가려진 화면 위에 이 안내만 보이게 한다
+  setTimeout(function () {
+    if (window.solGuardOk) return;
+    var d = document.createElement("div");
+    d.style.cssText = "visibility:visible;position:fixed;inset:0;display:grid;place-items:center;background:#000;color:#ddd;font:15px/1.6 system-ui,sans-serif;text-align:center;z-index:99999";
+    d.innerHTML = '<div>로그인 확인이 늦어지고 있어요.<br><a href="" style="color:#e8875f">다시 시도</a> · <a href="../" style="color:#e8875f">로그인 페이지로</a></div>';
+    document.body.appendChild(d);
+  }, 15000);
 </script>
 <script type="module" src="../js/auth-guard.js?v=20261015s" onerror="window.solGuardFail()"></script>
 <link rel="icon" href="../favicon.ico" sizes="any"><link rel="icon" type="image/png" href="../assets/favicon/favicon-32.png">
@@ -2648,8 +2655,10 @@ function fetchTransit(hp, done, ask){
   fetch(url).then(function(r){ return r.json(); }).then(function(j){
     var res;
     if(j && j.error){
-      var m = (j.error[0]||{}).message || '';
-      res = {state:'error', msg: /ApiKey/i.test(m) ? '키가 맞지 않습니다' : m};
+      var er = Array.isArray(j.error) ? (j.error[0]||{}) : j.error;
+      var code = String(er.code||''), m = er.message || er.msg || '';
+      if(code==='-98' || code==='-99') res = {state:'none'};
+      else res = {state:'error', msg: /ApiKey/i.test(m) ? '키가 맞지 않습니다' : (m || '오류 '+code)};
     } else {
       var t = readTransit(j);
       res = t ? {state:'ok', data:t} : {state:'none'};
@@ -4363,8 +4372,8 @@ function hopSteps(t){
              '<span class="hsb">도보 '+x.min+'분'+(x.m?' · '+x.m+'m':'')+'</span></li>';
     }
     return '<li class="hs ride"><span class="hsi">'+ico(x.kind)+'</span>'+
-           '<span class="hsb"><b class="hsno">'+x.no+'</b>'+
-           '<span class="hsw"><b>'+x.start+'</b>에서 타서 <b>'+x.end+'</b>에서 내립니다</span>'+
+           '<span class="hsb"><b class="hsno">'+escHtml(x.no)+'</b>'+
+           '<span class="hsw"><b>'+escHtml(x.start)+'</b>에서 타서 <b>'+escHtml(x.end)+'</b>에서 내립니다</span>'+
            '<small>'+(x.stops?x.stops+'개 정류장 · ':'')+x.min+'분</small></span></li>';
   }).join('');
   var sum = '총 '+fmtDur(t.min)+(t.transfers>0?' · 환승 '+t.transfers+'회':' · 환승 없음')+
@@ -4435,7 +4444,7 @@ function hopBar(hp){
     } else if(res.state==='none'){
       bar.innerHTML = withLinks(guess + '<small class="hnote">이 구간은 대중교통 노선이 잡히지 않습니다</small>');
     } else if(res.state==='error'){
-      bar.innerHTML = withLinks(guess + '<small class="hnote">노선을 불러오지 못했습니다 · '+res.msg+'</small>');
+      bar.innerHTML = withLinks(guess + '<small class="hnote">노선을 불러오지 못했습니다 · '+escHtml(res.msg||'')+'</small>');
       askBtn('다시 불러오기', transitUsed() >= ODSAY_DAILY);
     }
   }
@@ -4489,9 +4498,9 @@ function rmPin(L, ll, label, color, tip){
 }
 function rmStop(L, ll, tag, name, off){
   return L.marker(ll, {icon: L.divIcon({className:'', iconSize:[0,0],
-    html:'<div class="rm-stop'+(off?' off':'')+'"><i>'+tag+'</i>'+escHtml(name||'')+'</div>'}), zIndexOffset:500});
+    html:'<div class="rm-stop'+(off?' off':'')+'"><i>'+escHtml(tag)+'</i>'+escHtml(name||'')+'</div>'}), zIndexOffset:500});
 }
-function escHtml(t){ return String(t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function escHtml(t){ return String(t==null?'':t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
 /* 일정 전체: 일차별 색으로 번호를 찍고 순서대로 잇는다 */
 function openTripMap(){

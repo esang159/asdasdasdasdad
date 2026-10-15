@@ -18,6 +18,10 @@ class FeedbackTest(unittest.TestCase):
         self.assertIn("키워 주세요", body)
         self.assertIn("https://www.solworks.store/#notices", body)
 
+    def test_uid_of(self):
+        self.assertEqual(fb.uid_of("projects/p/databases/(default)/documents/users/U1/feedback/F1"), "U1")
+        self.assertEqual(fb.uid_of("weird/path"), "")
+
     def test_no_secret_skips(self):
         import os
         old = os.environ.pop("FIREBASE_SERVICE_ACCOUNT", None)

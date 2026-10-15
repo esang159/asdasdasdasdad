@@ -13,6 +13,11 @@ on:
 permissions:
   contents: write
 
+# 예약 실행과 수동 실행이 겹치면 차례로 돈다 (동시에 push 하다 한쪽이 거절되지 않게)
+concurrency:
+  group: crawl
+  cancel-in-progress: false
+
 jobs:
   crawl:
     runs-on: ubuntu-latest
@@ -32,6 +37,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/notices.json data/weather.json 2>/dev/null || git add data/notices.json
           git diff --cached --quiet || git commit -m "data: 사업공고 갱신 $(TZ=Asia/Seoul date +%F)"
+          # 수집하는 동안 다른 커밋이 올라왔으면 그 위에 얹어서 올린다
+          git pull --rebase origin "${GITHUB_REF_NAME}"
           git push
       - name: 카카오톡 알림
         continue-on-error: true   # 알림이 실패해도 수집 결과는 그대로 둔다

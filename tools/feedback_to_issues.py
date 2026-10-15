@@ -7,6 +7,9 @@
   FIREBASE_SERVICE_ACCOUNT  Firebase 콘솔 → 프로젝트 설정 → 서비스 계정 → 새 비공개 키 (JSON 전체)
   GITHUB_TOKEN              Actions 가 자동으로 넣어 준다 (issues: write)
   GITHUB_REPOSITORY         Actions 가 자동으로 넣어 준다 (owner/repo)
+  FEEDBACK_UIDS             (선택) 이슈로 옮길 사용자 uid, 쉼표로 구분. 없으면 아래 OWNER_UIDS
+
+다른 사람이 계정을 만들어 요청을 넣더라도 이슈가 되지 않도록 주인 계정 것만 옮긴다.
 """
 from __future__ import annotations
 
@@ -16,6 +19,13 @@ import sys
 import urllib.request
 
 FIRESTORE = "https://firestore.googleapis.com/v1"
+OWNER_UIDS = {"CBSAJUBKPXQPF3veVyMvHIDrBQT2"}   # sol 계정
+
+
+def uid_of(name: str) -> str:
+    """.../documents/users/{uid}/feedback/{id} 에서 uid."""
+    parts = name.split("/")
+    return parts[parts.index("users") + 1] if "users" in parts else ""
 
 
 def http(method: str, url: str, token: str, body: dict | None = None) -> dict | list:
@@ -72,21 +82,35 @@ def main() -> int:
     rows = http("POST", f"{FIRESTORE}/projects/{project}/databases/(default)/documents:runQuery", fb,
                 {"structuredQuery": {"from": [{"collectionId": "feedback", "allDescendants": True}]}})
     docs = [r["document"] for r in rows if r.get("document")]
-    new = [d for d in docs if plain(d.get("fields", {})).get("status") == "new"]
+    allowed = {u.strip() for u in os.environ.get("FEEDBACK_UIDS", "").split(",") if u.strip()} or OWNER_UIDS
+    new = [d for d in docs if plain(d.get("fields", {})).get("status") == "new" and uid_of(d["name"]) in allowed]
     new.sort(key=lambda d: d.get("createTime", ""))
     print(f"[feedback] 전체 {len(docs)}건, 새 요청 {len(new)}건")
 
-    made = 0
+    def mark(d: dict, status: str, issue: int | None = None) -> None:
+        fields = {"status": {"stringValue": status}}
+        mask = "updateMask.fieldPaths=status"
+        if issue is not None:
+            fields["issue"] = {"integerValue": str(issue)}
+            mask += "&updateMask.fieldPaths=issue"
+        http("PATCH", f"{FIRESTORE}/{d['name']}?{mask}", fb, {"fields": fields})
+
+    made, failed = 0, 0
     for d in new:
         title, body = issue_of(plain(d.get("fields", {})))
-        issue = http("POST", f"https://api.github.com/repos/{repo}/issues", gh,
-                     {"title": title, "body": body, "labels": ["수정요청"]})
-        http("PATCH", f"{FIRESTORE}/{d['name']}?updateMask.fieldPaths=status&updateMask.fieldPaths=issue", fb,
-             {"fields": {"status": {"stringValue": "issued"}, "issue": {"integerValue": str(issue["number"])}}})
-        print(f"[feedback] 이슈 #{issue['number']} 만듦: {title}")
-        made += 1
-    print(f"[feedback] 완료 — 이슈 {made}개")
-    return 0
+        try:
+            # 먼저 '옮기는 중'으로 바꿔 둔다. 도중에 끊겨도 다음 실행에서 같은 이슈를 또 만들지 않는다.
+            mark(d, "issuing")
+            issue = http("POST", f"https://api.github.com/repos/{repo}/issues", gh,
+                         {"title": title, "body": body, "labels": ["수정요청"]})
+            mark(d, "issued", issue["number"])
+            print(f"[feedback] 이슈 #{issue['number']} 만듦: {title}")
+            made += 1
+        except Exception as e:  # 하나가 실패해도 나머지는 계속 옮긴다
+            failed += 1
+            print(f"[feedback] 실패 ({d['name'].rsplit('/', 1)[-1]}): {e}")
+    print(f"[feedback] 완료 — 이슈 {made}개, 실패 {failed}개")
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
