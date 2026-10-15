@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sol Works</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261015c">
 </head>
 <body>
   <header class="topbar">
@@ -15,9 +15,9 @@
       <button data-tab="memo">메모</button>
       <button data-tab="backup">백업</button>
     </nav>
-    <div class="sync" id="syncBox" hidden>
-      <span class="sync-status" id="syncStatus"></span>
-      <button type="button" class="ghost sync-btn" id="syncBtn">구글로 로그인</button>
+    <div class="sync" id="syncBox">
+      <span class="sync-status" id="syncStatus">동기화 준비 중…</span>
+      <button type="button" class="ghost sync-btn" id="syncBtn" disabled>구글로 로그인</button>
     </div>
     <div class="today-label">
       <div id="weather" class="weather" hidden></div>
@@ -28,6 +28,11 @@
   <main>
     <!-- 대시보드 -->
     <section id="tab-home" class="tab active">
+      <div id="loginNudge" class="nudge" hidden>
+        <span>구글로 로그인하면 할 일·업무·메모·일정이 휴대폰과 PC에서 똑같이 보여요.</span>
+        <button type="button" id="nudgeLogin">구글로 로그인</button>
+        <button type="button" id="nudgeLater" class="ghost">나중에</button>
+      </div>
       <form id="askForm" class="ask">
         <span class="ask-mark" aria-hidden="true">✳</span>
         <input id="askInput" autocomplete="off" placeholder="Claude에게 물어보기 (예: 다음 주 화요일 2시 미팅 추가해줘)">
@@ -176,7 +181,7 @@
     </form>
   </dialog>
 
-  <script src="app.js"></script>
-  <script type="module" src="sync.js"></script>
+  <script src="app.js?v=20261015c"></script>
+  <script type="module" src="sync.js?v=20261015c" onerror="window.solSyncFailed && window.solSyncFailed('스크립트를 불러오지 못했어요')"></script>
 </body>
 </html>

@@ -26,8 +26,9 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache() });   /
 
 const $ = (s) => document.querySelector(s);
 const solApp = window.solApp;
-const box = $("#syncBox"), statusEl = $("#syncStatus"), btn = $("#syncBtn");
-box.hidden = false;
+const statusEl = $("#syncStatus"), btn = $("#syncBtn");
+const nudge = $("#loginNudge");
+btn.disabled = false;
 
 let user = null;
 let unsubs = [];
@@ -66,6 +67,7 @@ async function upload(key, value) {
 
 // app.js 의 store.set 이 부른다. 연달아 바뀌면 0.4초 모아서 한 번에 올린다.
 window.solSync = {
+  ready: true,
   push(key, value) {
     if (!user) return;
     setStatus("저장 중…");
@@ -107,6 +109,7 @@ onAuthStateChanged(auth, (u) => {
   unsubs.forEach((f) => f());
   unsubs = [];
   user = u;
+  nudge.hidden = !!u || localStorage.getItem("mwp.nudgeLater") === "1";
   if (u) {
     btn.textContent = "로그아웃";
     btn.title = u.email || "";
@@ -118,11 +121,7 @@ onAuthStateChanged(auth, (u) => {
   }
 });
 
-btn.addEventListener("click", async () => {
-  if (user) {
-    if (confirm("로그아웃할까요? 이 기기의 데이터는 그대로 남아요.")) await signOut(auth);
-    return;
-  }
+async function login() {
   const provider = new GoogleAuthProvider();
   try {
     await signInWithPopup(auth, provider);
@@ -134,4 +133,17 @@ btn.addEventListener("click", async () => {
       setStatus("로그인 실패: " + e.code, "err");
     }
   }
+}
+
+btn.addEventListener("click", async () => {
+  if (user) {
+    if (confirm("로그아웃할까요? 이 기기의 데이터는 그대로 남아요.")) await signOut(auth);
+    return;
+  }
+  login();
+});
+$("#nudgeLogin").addEventListener("click", login);
+$("#nudgeLater").addEventListener("click", () => {
+  localStorage.setItem("mwp.nudgeLater", "1");
+  nudge.hidden = true;
 });
