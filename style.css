@@ -500,3 +500,17 @@ button.brand:hover { color: var(--accent); }
 .logo-sm { --ls: .35em; --gap: .45em; font-size: 14px; }
 @media (max-width: 600px) { .logo-lg { font-size: 22px; } }
 button.brand:hover .logo { color: var(--accent); }
+
+/* 로고 장식(선·별)과 로그인 버튼은 강조색(주황) */
+.logo-orn { color: var(--accent); }
+.logo-orn i { opacity: .8; }
+.gate form button[type=submit] { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.gate form button[type=submit]:hover { filter: brightness(1.06); }
+
+/* 공고 메모 */
+.nmemo { margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: var(--accent-soft); border-left: 3px solid var(--accent); }
+.nmemo-label { font-size: 11px; color: var(--accent); font-weight: 600; }
+.nmemo p { margin: 2px 0 0; white-space: pre-wrap; font-size: 13px; line-height: 1.55; }
+.nmemo-edit { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.nmemo-edit textarea { font-size: 13px; }
+.nmemo-edit .row button { font-size: 12px; padding: 5px 12px; }

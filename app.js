@@ -34,13 +34,15 @@ const store = {
 };
 
 // 기기 사이에 동기화하는 데이터. 탭·필터 같은 화면 설정은 기기마다 따로 둔다.
-const SYNC_KEYS = ["events", "todos", "works", "notes", "stars"];
+const SYNC_KEYS = ["events", "todos", "works", "notes", "stars", "noticeMemos"];
 
 const state = {
   events: store.get("events", []),
   todos: store.get("todos", null) ?? SETUP_TODOS.map((text, i) => ({ id: "setup" + i, text, due: "", done: false })),
   works: store.get("works", []),     // 진행 중인 업무 {id, title, due, progress 0~100}
   stars: store.get("stars", {}),     // 공고 id -> 공고 사본 (목록에서 빠져도 유지)
+  noticeMemos: store.get("noticeMemos", {}),   // 공고 id -> {text, updated, title, url, end, kind}
+  editingMemo: null,                 // 지금 메모를 쓰고 있는 공고 id
   memo: store.get("memo", ""),       // 예전 한 칸짜리 메모 (포스트잇으로 옮긴다)
   notes: store.get("notes", null),   // 포스트잇 {id, text, color, updated}
   notices: [],
@@ -337,6 +339,10 @@ function renderNotices() {
   if (filter === "open") list = list.filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; });
   if (filter === "matched") list = list.filter((n) => n.matched && n.matched.length);
   if (filter === "new") list = list.filter(isNew);
+  if (filter === "memo") {
+    list = Object.entries(state.noticeMemos).map(([id, m]) =>
+      findNotice(id) || { id, title: m.title, url: m.url, end: m.end, kind: m.kind, source: "", regions: [] });
+  }
   if (sort === "deadline") list.sort((a, b) => (a.end || "9999").localeCompare(b.end || "9999"));
   else list.sort((a, b) => (b.first_seen || "").localeCompare(a.first_seen || "") || (b.posted || "").localeCompare(a.posted || ""));
 
@@ -368,12 +374,11 @@ function renderNotices() {
           ${(n.matched || []).map((k) => `<span class="badge new">#${esc(k)}</span>`).join("")}
         </div>
         ${n.summary ? `<div class="summary">${esc(n.summary)}</div>` : ""}
+        ${noticeMemoHTML(n)}
       </div>
       <div class="actions">
         ${ddayBadge(n.end)}
-        ${!n.end ? "" : state.events.some((e) => e.noticeId === n.id)
-          ? `<button class="ghost" disabled>일정 추가됨 ✓</button>`
-          : `<button class="ghost" data-to-cal="${esc(n.id)}">일정에 추가</button>`}
+        <button class="ghost" data-memo="${esc(n.id)}">${state.noticeMemos[n.id] ? "메모 수정" : "메모 추가"}</button>
       </div>
     </div>`).join("") : `<p class="meta">조건에 맞는 공고가 없습니다.</p>`;
 }
@@ -407,6 +412,24 @@ $("#nKind").addEventListener("click", (e) => {
   renderNotices();
 });
 
+// 공고마다 남기는 메모. 쓰는 중에는 입력칸, 저장하면 공고 아래에 메모 상자로 보인다.
+function noticeMemoHTML(n) {
+  const m = state.noticeMemos[n.id];
+  if (state.editingMemo === n.id) {
+    return `<div class="nmemo-edit">
+      <textarea class="nmemo-text" rows="3" placeholder="이 공고에 대한 메모 (준비할 서류, 담당자, 지원 여부 등)">${esc(m?.text || "")}</textarea>
+      <div class="row">
+        <button type="button" data-memo-save="${esc(n.id)}">저장</button>
+        <button type="button" class="ghost" data-memo-cancel>취소</button>
+        ${m ? `<button type="button" class="ghost" data-memo-del="${esc(n.id)}">메모 삭제</button>` : ""}
+      </div>
+    </div>`;
+  }
+  if (!m) return "";
+  const when = new Date(m.updated).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" });
+  return `<div class="nmemo"><span class="nmemo-label">메모 · ${esc(when)}</span><p>${esc(m.text)}</p></div>`;
+}
+
 function findNotice(id) {
   return state.notices.find((n) => n.id === id) || state.stars[id];
 }
@@ -420,12 +443,33 @@ $("#nList").addEventListener("click", (e) => {
     renderAll();
     return;
   }
-  const calId = e.target.dataset.toCal;
-  if (calId) {
-    const n = findNotice(calId);
-    state.events.push({ id: uid(), title: "[공고마감] " + n.title, date: n.end, time: "", kind: "deadline", memo: n.url, noticeId: n.id });
-    store.set("events", state.events);
-    renderAll();
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.memo) {
+    state.editingMemo = b.dataset.memo;
+    renderNotices();
+    const ta = $("#nList .nmemo-text");
+    ta?.focus();
+    ta?.setSelectionRange(ta.value.length, ta.value.length);
+  } else if ("memoCancel" in b.dataset) {
+    state.editingMemo = null;
+    renderNotices();
+  } else if (b.dataset.memoSave) {
+    const id = b.dataset.memoSave, text = $("#nList .nmemo-text").value.trim();
+    if (text) {
+      const n = findNotice(id) || {};
+      state.noticeMemos[id] = { text, updated: new Date().toISOString(), title: n.title, url: n.url, end: n.end, kind: n.kind };
+    } else {
+      delete state.noticeMemos[id];
+    }
+    store.set("noticeMemos", state.noticeMemos);
+    state.editingMemo = null;
+    renderNotices();
+  } else if (b.dataset.memoDel) {
+    delete state.noticeMemos[b.dataset.memoDel];
+    store.set("noticeMemos", state.noticeMemos);
+    state.editingMemo = null;
+    renderNotices();
   }
 });
 
@@ -931,7 +975,7 @@ async function loadWeather() {
   const today = todayStr();
   const days = d.time.map((t, i) => ({
     t, code: d.weather_code[i], hi: d.temperature_2m_max[i], lo: d.temperature_2m_min[i], pop: d.precipitation_probability_max[i],
-  })).filter((x) => x.t >= today).slice(0, 2);
+  })).filter((x) => x.t >= today).slice(0, 1);
   if (!days.length) return;
   // 한 날짜 = 작은 칸 하나:  [아이콘] [최고/최저] / [날씨] [강수] / 오늘
   el.innerHTML = days.map((x) => `
@@ -940,7 +984,6 @@ async function loadWeather() {
       <span class="w-temp">${Math.round(x.hi)}°<small>/${Math.round(x.lo)}°</small></span>
       <span class="w-label">${esc(weatherLabel(x.code))}</span>
       <span class="w-pop ${x.pop >= 60 ? "wet" : ""}">강수 ${x.pop ?? "-"}%</span>
-      <span class="w-when">${x.t === today ? "오늘" : "내일"}</span>
     </div>`).join("");
   el.hidden = false;
 }
@@ -978,7 +1021,7 @@ window.solApp = {
   hasLocal(key) { return store.has(key); },
   // 로그아웃하면 이 기기 화면에서 내 데이터를 지운다 (클라우드에는 그대로 남아 다시 로그인하면 돌아온다)
   clearSynced() {
-    for (const key of SYNC_KEYS) this.apply(key, key === "stars" ? {} : []);
+    for (const key of SYNC_KEYS) this.apply(key, key === "stars" || key === "noticeMemos" ? {} : []);
   },
   apply(key, value) {
     state[key] = value;
@@ -986,10 +1029,11 @@ window.solApp = {
     if (key === "works") state.works.forEach((w, i) => { w.starred ??= false; w.order ??= i; });
     // 메모를 쓰는 중이면 메모 보드는 다시 그리지 않는다 (커서가 날아가지 않게)
     const typing = document.activeElement?.classList?.contains("note-text");
+    const memoTyping = document.activeElement?.classList?.contains("nmemo-text");
     renderHub();
     renderHome();
     renderCalendar();
-    renderNotices();
+    if (!memoTyping) renderNotices();
     if (!typing) renderNotes();
   },
 };
