@@ -240,12 +240,16 @@ async function loadNotices() {
 function renderNotices() {
   const q = $("#nSearch").value.trim().toLowerCase();
   const src = $("#nSource").value;
+  const region = $("#nRegion").value;
+  store.set("region", region);
   const filter = $("#nFilter").value;
   const sort = $("#nSort").value;
 
   let list = filter === "star" ? Object.values(state.stars) : state.notices.slice();
   if (src) list = list.filter((n) => n.source === src);
-  if (q) list = list.filter((n) => [n.title, n.org, n.category, n.summary].join(" ").toLowerCase().includes(q));
+  // 지역을 고르면 그 지역 공고와 전국 공고를 함께 보여준다
+  if (region) list = list.filter((n) => !(n.regions && n.regions.length) || n.regions.includes(region));
+  if (q) list = list.filter((n) => [n.title, n.org, n.category, n.summary, n.target].join(" ").toLowerCase().includes(q));
   if (filter === "open") list = list.filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; });
   if (filter === "matched") list = list.filter((n) => n.matched && n.matched.length);
   if (filter === "new") list = list.filter(isNew);
@@ -270,6 +274,12 @@ function renderNotices() {
           ${n.org ? `<span>${esc(n.org)}</span>` : ""}
           ${n.category ? `<span>· ${esc(n.category)}</span>` : ""}
           <span>· 접수 ${esc(n.start || "?")} ~ ${esc(n.end || "?")}</span>
+        </div>
+        <div class="facts">
+          <span><b>지역</b> ${esc(n.regions && n.regions.length ? n.regions.join(", ") : "전국")}</span>
+          ${n.target ? `<span><b>대상</b> ${esc(n.target)}</span>` : ""}
+          ${n.age ? `<span><b>업력</b> ${esc(n.age)}</span>` : ""}
+          ${n.contact ? `<span><b>문의</b> ${esc(n.contact)}</span>` : ""}
           ${(n.matched || []).map((k) => `<span class="badge new">#${esc(k)}</span>`).join("")}
         </div>
         ${n.summary ? `<div class="summary">${esc(n.summary)}</div>` : ""}
@@ -283,7 +293,8 @@ function renderNotices() {
     </div>`).join("") : `<p class="meta">조건에 맞는 공고가 없습니다.</p>`;
 }
 
-["#nSearch", "#nSource", "#nFilter", "#nSort"].forEach((s) => $(s).addEventListener("input", renderNotices));
+$("#nRegion").value = store.get("region", "");
+["#nSearch", "#nSource", "#nRegion", "#nFilter", "#nSort"].forEach((s) => $(s).addEventListener("input", renderNotices));
 
 function findNotice(id) {
   return state.notices.find((n) => n.id === id) || state.stars[id];
@@ -373,7 +384,7 @@ function pageContext() {
   const notices = state.notices
     .filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; })
     .slice(0, 60)
-    .map((n) => `- [${n.id}] ${n.title} | ${n.org || ""} | 접수 ${n.start || "?"}~${n.end || "?"}${state.stars[n.id] ? " | ★관심" : ""}`);
+    .map((n) => `- [${n.id}] ${n.title} | ${n.org || ""} | 지역 ${(n.regions || []).join(",") || "전국"} | 대상 ${n.target || "-"} | 접수 ${n.start || "?"}~${n.end || "?"}${state.stars[n.id] ? " | ★관심" : ""}`);
   return `오늘: ${today} (${new Date().toLocaleDateString("ko-KR", { weekday: "long" })})
 
 [앞으로 30일 일정]

@@ -63,6 +63,25 @@ def parse_period(value) -> tuple[str | None, str | None]:
     return start, end
 
 
+REGIONS = ["서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종", "경기", "강원",
+           "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
+REGION_ALIASES = {
+    "충청북도": "충북", "충청남도": "충남", "전라북도": "전북", "전북특별자치도": "전북",
+    "전라남도": "전남", "경상북도": "경북", "경상남도": "경남", "강원특별자치도": "강원",
+    "제주특별자치도": "제주", "세종특별자치시": "세종",
+}
+
+
+def detect_regions(*texts) -> list[str]:
+    """지역 표시 문자열이나 제목에서 시·도를 뽑는다. 못 찾으면 빈 목록(전국)."""
+    text = " ".join(str(t or "") for t in texts)
+    for long, short in REGION_ALIASES.items():
+        text = text.replace(long, short)
+    if "전국" in text:
+        return []
+    return [r for r in REGIONS if r in text]
+
+
 def make_id(source: str, key: str) -> str:
     return source + ":" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
 
@@ -106,6 +125,11 @@ def fetch_bizinfo(cfg: dict) -> list[dict]:
             "posted": parse_date(r.get("creatPnttm")),
             "url": link,
             "summary": clean(re.sub(r"<[^>]+>", " ", r.get("bsnsSumryCn") or ""))[:300],
+            "target": clean(r.get("trgetNm")),
+            "regions": detect_regions(r.get("hashtags"), r.get("jrsdInsttNm"), r.get("excInsttNm"), title),
+            "age": "",
+            "how": clean(re.sub(r"<[^>]+>", " ", r.get("reqstMthPapersCn") or ""))[:200],
+            "contact": clean(r.get("refrncNm"))[:200],
         })
     print(f"[bizinfo] {len(items)}건")
     return items
@@ -144,6 +168,11 @@ def fetch_kstartup(cfg: dict) -> list[dict]:
             "posted": parse_date(r.get("pbanc_rcpt_bgng_dt")),
             "url": link,
             "summary": clean(r.get("pbanc_ctnt"))[:300],
+            "target": clean(r.get("aply_trgt") or r.get("aply_trgt_ctnt"))[:200],
+            "regions": detect_regions(r.get("supt_regin"), title),
+            "age": clean(r.get("biz_enyy"))[:100],
+            "how": "",
+            "contact": clean(r.get("prch_cnpl_no") or r.get("biz_prch_dprt_nm"))[:200],
         })
     print(f"[kstartup] {len(items)}건")
     return items
@@ -175,6 +204,11 @@ def fetch_rss(feed: dict) -> list[dict]:
             "posted": posted,
             "url": link,
             "summary": clean(re.sub(r"<[^>]+>", " ", it.findtext("description") or ""))[:300],
+            "target": "",
+            "regions": detect_regions(title, feed.get("region")),
+            "age": "",
+            "how": "",
+            "contact": "",
         })
     print(f"[rss:{name}] {len(items)}건")
     return items
@@ -183,7 +217,8 @@ def fetch_rss(feed: dict) -> list[dict]:
 # ---------------------------------------------------------------- 병합
 
 def match_keywords(item: dict, keywords: list[str]) -> list[str]:
-    text = " ".join([item.get("title", ""), item.get("category", ""), item.get("summary", "")]).lower()
+    text = " ".join([item.get("title", ""), item.get("category", ""), item.get("summary", ""),
+                     item.get("target", "")]).lower()
     return [k for k in keywords if k.lower() in text]
 
 

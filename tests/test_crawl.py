@@ -19,6 +19,14 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(crawl.parse_period("예산 소진시까지"), (None, None))
 
 
+class RegionTest(unittest.TestCase):
+    def test_detect_regions(self):
+        self.assertEqual(crawl.detect_regions("#경기 #창업"), ["경기"])
+        self.assertEqual(crawl.detect_regions("전라북도 경제통상진흥원"), ["전북"])
+        self.assertEqual(crawl.detect_regions("전국"), [])
+        self.assertEqual(crawl.detect_regions("중소벤처기업부", None), [])
+
+
 class MergeTest(unittest.TestCase):
     cfg = {"keywords": ["AI"], "exclude_keywords": ["채용"], "keep_expired_days": 7}
 

@@ -27,7 +27,11 @@
    "first_seen": "2026-10-15",
    "matched": [
     "창업"
-   ]
+   ],
+   "target": "예비창업자",
+   "regions": [],
+   "age": "예비창업자",
+   "contact": ""
   },
   {
    "id": "sample:2d4605003292",
@@ -44,7 +48,11 @@
    "matched": [
     "AI",
     "바우처"
-   ]
+   ],
+   "target": "중소기업",
+   "regions": [],
+   "age": "",
+   "contact": "중소기업 통합콜센터 1357"
   },
   {
    "id": "sample:a7ba0de522c9",
@@ -61,7 +69,13 @@
    "matched": [
     "창업",
     "디지털"
-   ]
+   ],
+   "target": "창업기업",
+   "regions": [
+    "서울"
+   ],
+   "age": "7년 미만",
+   "contact": ""
   },
   {
    "id": "sample:67923aaa869d",
@@ -78,7 +92,11 @@
    "matched": [
     "수출",
     "바우처"
-   ]
+   ],
+   "target": "수출 중소·중견기업",
+   "regions": [],
+   "age": "",
+   "contact": ""
   },
   {
    "id": "sample:ee1eec46e056",
@@ -94,7 +112,11 @@
    "first_seen": "2026-10-13",
    "matched": [
     "R&D"
-   ]
+   ],
+   "target": "중소기업 연구 담당자",
+   "regions": [],
+   "age": "",
+   "contact": ""
   },
   {
    "id": "sample:4c7307852df9",
@@ -110,7 +132,11 @@
    "first_seen": "2026-10-08",
    "matched": [
     "창업"
-   ]
+   ],
+   "target": "창업기업",
+   "regions": [],
+   "age": "3년 미만",
+   "contact": ""
   },
   {
    "id": "sample:5822cf89b094",
@@ -124,7 +150,11 @@
    "url": "https://www.bizinfo.go.kr",
    "summary": "분야별 전문가 1:1 컨설팅.",
    "first_seen": "2026-10-05",
-   "matched": []
+   "matched": [],
+   "target": "소상공인",
+   "regions": [],
+   "age": "",
+   "contact": ""
   },
   {
    "id": "sample:0d4b74ce4a13",
@@ -140,7 +170,13 @@
    "first_seen": "2026-09-20",
    "matched": [
     "스마트"
-   ]
+   ],
+   "target": "도내 제조 중소기업",
+   "regions": [
+    "경기"
+   ],
+   "age": "",
+   "contact": ""
   },
   {
    "id": "sample:bbaacb654886",
@@ -154,7 +190,11 @@
    "url": "https://www.k-startup.go.kr",
    "summary": "",
    "first_seen": "2026-09-01",
-   "matched": []
+   "matched": [],
+   "target": "창업기업",
+   "regions": [],
+   "age": "7년 미만",
+   "contact": ""
   }
  ]
 }
