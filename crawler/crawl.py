@@ -82,13 +82,21 @@ REGION_ALIASES = {
 
 
 def detect_regions(*texts) -> list[str]:
-    """지역 표시 문자열이나 제목에서 시·도를 뽑는다. 못 찾으면 빈 목록(전국)."""
-    text = " ".join(str(t or "") for t in texts)
-    for long, short in REGION_ALIASES.items():
-        text = text.replace(long, short)
-    if "전국" in text:
-        return []
-    return [r for r in REGIONS if r in text]
+    """지역 표시 문자열이나 제목에서 시·도를 뽑는다. 못 찾거나 너무 많이 걸리면 빈 목록(전국).
+    앞쪽 인자를 먼저 본다: 제목·기관에서 찾으면 그걸 쓰고, 없을 때만 뒤쪽(해시태그 등)을 본다."""
+    for t in texts:
+        text = str(t or "")
+        for long, short in REGION_ALIASES.items():
+            text = text.replace(long, short)
+        text = re.sub(r"(서울|부산|대구|인천|광주|대전|울산)(특별시|광역시)", r"\1", text)
+        if "전국" in text:
+            return []
+        found = [r for r in REGIONS if r in text]
+        if len(found) >= 5:      # 지역 태그를 잔뜩 단 공고는 사실상 전국 대상
+            return []
+        if found:
+            return found
+    return []
 
 
 def make_id(source: str, key: str) -> str:
@@ -145,7 +153,7 @@ def fetch_bizinfo(cfg: dict) -> list[dict]:
             "url": link,
             "summary": clean(re.sub(r"<[^>]+>", " ", r.get("bsnsSumryCn") or ""))[:300],
             "target": clean(r.get("trgetNm")),
-            "regions": detect_regions(r.get("hashtags"), r.get("jrsdInsttNm"), r.get("excInsttNm"), title),
+            "regions": detect_regions(title, r.get("jrsdInsttNm"), r.get("hashtags")),
             "age": "",
             "how": clean(re.sub(r"<[^>]+>", " ", r.get("reqstMthPapersCn") or ""))[:200],
             "contact": clean(r.get("refrncNm"))[:200],
@@ -198,7 +206,7 @@ def fetch_kstartup(cfg: dict) -> list[dict]:
             "url": link,
             "summary": clean(r.get("pbanc_ctnt"))[:300],
             "target": clean(r.get("aply_trgt") or r.get("aply_trgt_ctnt"))[:200],
-            "regions": detect_regions(r.get("supt_regin"), title),
+            "regions": detect_regions(title, r.get("supt_regin")),
             "age": clean(r.get("biz_enyy"))[:100],
             "how": "",
             "contact": clean(r.get("prch_cnpl_no") or r.get("biz_prch_dprt_nm"))[:200],
@@ -409,6 +417,8 @@ def merge(old_items: list[dict], new_items: list[dict], cfg: dict, today: date) 
     excludes = [k.lower() for k in cfg.get("exclude_keywords", [])]
     keep_days = cfg.get("keep_expired_days", 14)
     cutoff = (today - timedelta(days=keep_days)).isoformat()
+    # 마감일이 없는(상시·예산 소진 시) 공고는 최근 open_ended_days 안에 올라온 것만 남긴다
+    open_cutoff = (today - timedelta(days=cfg.get("open_ended_days", 120))).isoformat()
     today_s = today.isoformat()
 
     by_id = {it["id"]: it for it in old_items}
@@ -420,6 +430,8 @@ def merge(old_items: list[dict], new_items: list[dict], cfg: dict, today: date) 
     result, by_title = [], {}
     for it in by_id.values():
         if it.get("end") and it["end"] < cutoff:
+            continue
+        if not it.get("end") and (it.get("posted") or it.get("first_seen") or today_s) < open_cutoff:
             continue
         if not it.get("kind"):
             it["kind"] = "연구과제" if RND_RE.search(it.get("title", "")) else "지원사업"

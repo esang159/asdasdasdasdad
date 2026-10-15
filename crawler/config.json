@@ -30,5 +30,6 @@
       "delay": 0.5
     },
     "rss": []
-  }
+  },
+  "open_ended_days": 120
 }

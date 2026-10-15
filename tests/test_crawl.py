@@ -25,6 +25,12 @@ class RegionTest(unittest.TestCase):
         self.assertEqual(crawl.detect_regions("전라북도 경제통상진흥원"), ["전북"])
         self.assertEqual(crawl.detect_regions("전국"), [])
         self.assertEqual(crawl.detect_regions("중소벤처기업부", None), [])
+        # 제목 표시가 해시태그보다 먼저
+        self.assertEqual(crawl.detect_regions("[부산] 공공구매 페어", "부산광역시", "부산,서울"), ["부산"])
+        # 기관명으로 판단
+        self.assertEqual(crawl.detect_regions("2026년 기업유치 지원사업", "대구광역시", "서울,부산"), ["대구"])
+        # 지역 태그가 잔뜩이면 전국
+        self.assertEqual(crawl.detect_regions("지원사업", "중소벤처기업부", "서울,부산,대구,인천,광주,대전"), [])
 
 
 class NtisParseTest(unittest.TestCase):
@@ -82,6 +88,14 @@ class MergeTest(unittest.TestCase):
         self.assertEqual(len(out), 1)
         self.assertEqual(out[0]["kind"], "연구과제")
         self.assertEqual(out[0]["also"], ["NTIS"])
+
+    def test_drops_old_open_ended(self):
+        new = [
+            {"id": "o1", "source": "기업마당", "title": "상시 모집 A", "end": None, "posted": "2023-11-03"},
+            {"id": "o2", "source": "기업마당", "title": "상시 모집 B", "end": None, "posted": "2026-09-01"},
+        ]
+        out = crawl.merge([], new, self.cfg, date(2026, 10, 15))
+        self.assertEqual([i["id"] for i in out], ["o2"])
 
     def test_keeps_same_source_variants(self):
         new = [
