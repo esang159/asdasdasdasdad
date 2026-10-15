@@ -1,0 +1,33 @@
+name: 수정 요청 → 이슈
+
+# 사이트 오른쪽 아래 [수정 요청]으로 올린 내용을 GitHub 이슈로 옮긴다.
+# 한 시간마다 돌고, Actions 탭에서 바로 돌릴 수도 있다.
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: feedback
+  cancel-in-progress: false
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 라이브러리 설치
+        run: pip install --quiet google-auth requests
+      - name: 수정 요청 옮기기
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/feedback_to_issues.py

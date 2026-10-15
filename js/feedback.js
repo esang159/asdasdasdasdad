@@ -1,7 +1,8 @@
-// 수정 요청 버튼 — 화면 오른쪽 아래 연필 버튼을 누르면 메모 칸이 열리고,
-// [GitHub에 올리기]를 누르면 저장소의 새 이슈 작성 화면이 내용이 채워진 채로 열린다.
-// GitHub에서 [Submit new issue]만 누르면 올라가고, Claude에게 "수정 요청 불러와"라고 하면 읽어서 고친다.
-// 페이지에 토큰을 넣지 않으려고 GitHub 화면을 거친다. 대시보드와 여행노트가 함께 쓴다.
+// 수정 요청 버튼 — 화면 오른쪽 아래 연필 버튼을 누르면 메모 칸이 열린다. 대시보드와 여행노트가 함께 쓴다.
+// [올리기]를 누르면
+//   · 사이트에 로그인해 있으면 Firebase 에 바로 저장 (feedback-store.js). 한 시간 안에 GitHub 이슈로 옮겨진다.
+//   · 로그인이 안 돼 있으면 GitHub 새 이슈 화면을 내용이 채워진 채로 연다 (거기서 Submit).
+// Claude에게 "수정 요청 불러와"라고 하면 이슈를 읽어서 고친다.
 (function () {
   "use strict";
   var REPO = "https://github.com/esang159/solworks";
@@ -72,8 +73,8 @@
     '<h3>수정 요청</h3>' +
     '<div class="fb-where">지금 화면: <b class="fb-place"></b></div>' +
     '<textarea class="fb-text" placeholder="고치고 싶은 점을 적어 주세요.&#10;예) 공고 목록 글씨가 너무 작아요 / 지도 버튼을 위로 옮겨 주세요"></textarea>' +
-    '<div class="fb-row"><button type="button" class="fb-go">GitHub에 올리기</button><button type="button" class="fb-x">닫기</button></div>' +
-    '<p class="fb-help">GitHub 창이 열리면 <b>Submit new issue</b>를 눌러 주세요. 그다음 Claude에게 <b>"수정 요청 불러와"</b>라고 하면 읽어서 고칩니다.</p>' +
+    '<div class="fb-row"><button type="button" class="fb-go">올리기</button><button type="button" class="fb-x">닫기</button></div>' +
+    '<p class="fb-help fb-msg"></p>' +
     '<details class="fb-sent"><summary>이 기기에서 보낸 요청</summary><ul></ul>' +
     '<p class="fb-help"><a href="' + REPO + '/issues" target="_blank" rel="noopener">GitHub에서 전체 보기</a></p></details>';
 
@@ -86,11 +87,19 @@
       ? list.slice().reverse().map(function (s) { return "<li>" + esc(s.text.slice(0, 80)) + "<small>" + esc(s.where) + " · " + esc(s.at) + "</small></li>"; }).join("")
       : "<li>아직 없어요</li>";
   }
-  function sync() { go.disabled = !text.value.trim(); }
+  var msg = panel.querySelector(".fb-msg");
+  var direct = function () { return !!(window.solFeedback && window.solFeedback.ready()); };
+  function hint() {
+    msg.innerHTML = direct()
+      ? '누르면 바로 올라갑니다. Claude에게 <b>"수정 요청 불러와"</b>라고 하면 읽어서 고칩니다.'
+      : '로그인이 안 돼 있어 GitHub 창으로 올립니다. 창이 열리면 <b>Submit new issue</b>를 눌러 주세요.';
+  }
+  function sync() { go.disabled = sending || !text.value.trim(); }
+  var sending = false;
   function open() {
     panel.querySelector(".fb-place").textContent = where();
     text.value = load(DRAFT, "");
-    sync(); renderSent();
+    sync(); renderSent(); hint();
     panel.classList.add("open");
     btn.setAttribute("aria-expanded", "true");
     text.focus();
@@ -104,24 +113,46 @@
 
   go.addEventListener("click", function () {
     var body = text.value.trim();
-    if (!body) return;
+    if (!body || sending) return;
     var place = where();
     var now = new Date();
     var at = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0") +
       " " + String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
-    var first = body.split("\n")[0].slice(0, 50);
-    var title = "[수정요청] " + place + " — " + first;
-    var issue = body + "\n\n---\n- 화면: " + place + "\n- 주소: " + location.href + "\n- 작성: " + at +
-      "\n- 화면 크기: " + window.innerWidth + "×" + window.innerHeight;
-    var url = REPO + "/issues/new?title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(issue) + "&labels=" + encodeURIComponent("수정요청");
-    window.open(url, "_blank", "noopener");
-    var sent = load(SENT, []);
-    sent.push({ text: body, where: place, at: at });
-    save(SENT, sent.slice(-20));
-    save(DRAFT, "");
-    text.value = "";
-    sync(); renderSent();
-    panel.querySelector(".fb-sent").open = true;
+    var item = { text: body, where: place, url: location.href, at: at, size: window.innerWidth + "×" + window.innerHeight };
+
+    function done(how) {
+      var sent = load(SENT, []);
+      sent.push({ text: body, where: place, at: at });
+      save(SENT, sent.slice(-20));
+      save(DRAFT, "");
+      text.value = "";
+      sending = false;
+      sync(); renderSent();
+      panel.querySelector(".fb-sent").open = true;
+      msg.innerHTML = how;
+    }
+    function viaGitHub() {
+      var title = "[수정요청] " + place + " — " + body.split("\n")[0].slice(0, 50);
+      var issue = body + "\n\n---\n- 화면: " + place + "\n- 주소: " + item.url + "\n- 작성: " + at + "\n- 화면 크기: " + item.size;
+      window.open(REPO + "/issues/new?title=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(issue) +
+        "&labels=" + encodeURIComponent("수정요청"), "_blank", "noopener");
+      done('GitHub 창에서 <b>Submit new issue</b>를 눌러야 올라갑니다.');
+    }
+
+    if (!direct()) return viaGitHub();
+    sending = true; sync();
+    go.textContent = "올리는 중…";
+    window.solFeedback.send(item).then(function () {
+      go.textContent = "올리기";
+      done('<b>올라갔어요 ✓</b> Claude에게 "수정 요청 불러와"라고 하면 읽어서 고칩니다.');
+    }).catch(function (e) {
+      console.error(e);
+      go.textContent = "올리기";
+      sending = false; sync();
+      msg.innerHTML = '저장하지 못했어요 (' + esc(e && e.message || "연결 오류") + '). 다시 누르거나, 안 되면 <a href="#" class="fb-gh" style="color:#e8875f">GitHub로 올리기</a>';
+      var a = msg.querySelector(".fb-gh");
+      if (a) a.addEventListener("click", function (ev) { ev.preventDefault(); viaGitHub(); });
+    });
   });
 
   // 로그인 화면에서는 숨긴다 (대시보드의 body.locked)

@@ -1,6 +1,6 @@
 // 여러 기기 동기화 (Firebase 무료 요금제)
 // 아이디·비밀번호로 로그인하면 일정·할 일·업무·메모·관심공고를 Firestore 의 users/{내 uid}/data/{종류} 에 저장하고,
-// 다른 기기에서 바뀌면 바로 받아온다. 보안 규칙은 firestore.rules 참고 (본인 칸만 읽고 쓰기).
+// 다른 기기에서 바뀌면 바로 받아온다. 보안 규칙은 firebase/firestore.rules 참고 (본인 칸만 읽고 쓰기).
 // 이 파일을 못 불러오는 환경(예: claude.ai 미리보기)에서는 로그인 버튼이 안 보이고 기존처럼 이 기기에만 저장된다.
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -10,15 +10,7 @@ import {
 import {
   initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, onSnapshot, serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAFCCWL4yFJ0_B63jlVxmMucj2XNZfr5Hs",
-  authDomain: "test-b773f.firebaseapp.com",
-  projectId: "test-b773f",
-  storageBucket: "test-b773f.firebasestorage.app",
-  messagingSenderId: "554884672860",
-  appId: "1:554884672860:web:7161e7369b34b9bacb2599",
-};
+import { firebaseConfig } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
