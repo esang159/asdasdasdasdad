@@ -14,6 +14,68 @@
  "errors": [],
  "items": [
   {
+   "id": "sample:d27bb426ce3e",
+   "source": "NTIS",
+   "kind": "연구과제",
+   "title": "[샘플] 2026년 하반기 산업기술혁신사업 신규지원 대상과제 공고",
+   "org": "산업통상자원부",
+   "category": "국가R&D",
+   "start": "2026-10-10",
+   "end": "2026-10-31",
+   "posted": "2026-10-08",
+   "url": "https://www.ntis.go.kr/rndgate/eg/un/ra/mng.do",
+   "summary": "",
+   "target": "",
+   "regions": [],
+   "age": "",
+   "how": "",
+   "contact": "",
+   "first_seen": "2026-10-08",
+   "matched": []
+  },
+  {
+   "id": "sample:a1378a866706",
+   "source": "NTIS",
+   "kind": "연구과제",
+   "title": "[샘플] 2026년 중소기업 기술혁신개발사업(시장확대형) 공고",
+   "org": "중소벤처기업부",
+   "category": "국가R&D",
+   "start": "2026-10-15",
+   "end": "2026-10-29",
+   "posted": "2026-10-13",
+   "url": "https://www.ntis.go.kr/rndgate/eg/un/ra/mng.do",
+   "summary": "",
+   "target": "",
+   "regions": [],
+   "age": "",
+   "how": "",
+   "contact": "",
+   "first_seen": "2026-10-13",
+   "matched": []
+  },
+  {
+   "id": "sample:168bc7ce8282",
+   "source": "NTIS",
+   "kind": "연구과제",
+   "title": "[샘플] 2026년도 인공지능 핵심원천기술개발사업 신규과제 공모",
+   "org": "과학기술정보통신부",
+   "category": "국가R&D",
+   "start": "2026-10-20",
+   "end": "2026-11-10",
+   "posted": "2026-10-14",
+   "url": "https://www.ntis.go.kr/rndgate/eg/un/ra/mng.do",
+   "summary": "",
+   "target": "",
+   "regions": [],
+   "age": "",
+   "how": "",
+   "contact": "",
+   "first_seen": "2026-10-14",
+   "matched": [
+    "인공지능"
+   ]
+  },
+  {
    "id": "sample:45887b1e439e",
    "source": "K-Startup",
    "title": "[샘플] 2026년 예비창업패키지 추가 모집",
@@ -31,7 +93,8 @@
    "target": "예비창업자",
    "regions": [],
    "age": "예비창업자",
-   "contact": ""
+   "contact": "",
+   "kind": "지원사업"
   },
   {
    "id": "sample:2d4605003292",
@@ -52,7 +115,8 @@
    "target": "중소기업",
    "regions": [],
    "age": "",
-   "contact": "중소기업 통합콜센터 1357"
+   "contact": "중소기업 통합콜센터 1357",
+   "kind": "지원사업"
   },
   {
    "id": "sample:a7ba0de522c9",
@@ -75,7 +139,8 @@
     "서울"
    ],
    "age": "7년 미만",
-   "contact": ""
+   "contact": "",
+   "kind": "지원사업"
   },
   {
    "id": "sample:67923aaa869d",
@@ -96,7 +161,8 @@
    "target": "수출 중소·중견기업",
    "regions": [],
    "age": "",
-   "contact": ""
+   "contact": "",
+   "kind": "지원사업"
   },
   {
    "id": "sample:ee1eec46e056",
@@ -116,7 +182,8 @@
    "target": "중소기업 연구 담당자",
    "regions": [],
    "age": "",
-   "contact": ""
+   "contact": "",
+   "kind": "연구과제"
   },
   {
    "id": "sample:4c7307852df9",
@@ -136,7 +203,8 @@
    "target": "창업기업",
    "regions": [],
    "age": "3년 미만",
-   "contact": ""
+   "contact": "",
+   "kind": "지원사업"
   },
   {
    "id": "sample:5822cf89b094",
@@ -154,7 +222,8 @@
    "target": "소상공인",
    "regions": [],
    "age": "",
-   "contact": ""
+   "contact": "",
+   "kind": "지원사업"
   },
   {
    "id": "sample:0d4b74ce4a13",
@@ -176,7 +245,8 @@
     "경기"
    ],
    "age": "",
-   "contact": ""
+   "contact": "",
+   "kind": "지원사업"
   },
   {
    "id": "sample:bbaacb654886",
@@ -194,7 +264,8 @@
    "target": "창업기업",
    "regions": [],
    "age": "7년 미만",
-   "contact": ""
+   "contact": "",
+   "kind": "지원사업"
   }
  ]
 }
