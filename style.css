@@ -497,7 +497,7 @@ button.brand:hover { color: var(--accent); }
 .logo-star { width: var(--star); height: var(--star); fill: currentColor; flex: none; }
 .logo-lg { --ls: .55em; --gap: .7em; --orn-gap: 14px; --orn-top: 16px; --star: 18px; font-size: 26px; }
 .logo-md { --ls: .5em; --gap: .6em; --orn-gap: 10px; --orn-top: 11px; --star: 13px; font-size: 19px; }
-.logo-sm { --ls: .35em; --gap: .45em; font-size: 14px; }
+.logo-sm { --ls: .4em; --gap: .5em; --orn-gap: 6px; --orn-top: 7px; --star: 9px; font-size: 14px; }
 @media (max-width: 600px) { .logo-lg { font-size: 22px; } }
 button.brand:hover .logo { color: var(--accent); }
 
