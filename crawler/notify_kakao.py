@@ -27,7 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 NOTICES = ROOT / "data" / "notices.json"
 KST = timezone(timedelta(hours=9))
-DEFAULT_PAGE = "https://esang159.github.io/asdasdasdasdad/"
+DEFAULT_PAGE = "https://www.solworks.store/"
 TEXT_LIMIT = 200   # 기본 텍스트 템플릿 본문 길이에 여유를 두고 맞춘다
 MAX_ITEMS = 5
 

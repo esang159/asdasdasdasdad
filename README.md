@@ -33,7 +33,7 @@ tests/                            수집기 단위 테스트
    - `BIZINFO_API_KEY`
    - `DATA_GO_KR_KEY`
 3. **수집 실행**: Actions 탭 → "사업공고 수집" → Run workflow. 이후 매일 자동으로 실행됩니다.
-4. **페이지 공개**: Settings → Pages → Branch를 이 브랜치(또는 main)의 `/ (root)`로 지정
+4. **페이지 공개**: Settings → Pages → Branch를 이 브랜치의 `/ (root)`로 지정. 주소는 https://www.solworks.store (저장소의 `CNAME` 파일)
 5. **관심 키워드 변경**: `crawler/config.json`의 `keywords`를 수정하면 해당 공고에 태그가 붙습니다.
 
 키가 없으면 수집기는 해당 수집처를 건너뛰고 샘플 데이터를 그대로 둡니다.
