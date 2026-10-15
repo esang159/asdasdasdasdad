@@ -249,10 +249,7 @@ input.ymd { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 /* 일정 팝업 */
 .cal-full { margin-bottom: 16px; }
 .cal-full .card { margin-bottom: 0; }
-.add-btn {
-  width: 26px; height: 26px; padding: 0; border-radius: 50%;
-  font-size: 18px; line-height: 26px; text-align: center; font-weight: 600;
-}
+
 .cal-grid .ev[data-ev] { cursor: pointer; }
 .dialog {
   border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px;
@@ -264,5 +261,14 @@ input.ymd { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 .dialog-head h2 { margin: 0; font-size: 16px; }
 .dialog-head .icon { font-size: 22px; }
 @media (max-width: 600px) { .legend { display: flex; } .legend > span { display: none; } }
-.cal-head .add-btn { background: var(--accent); color: #fff; font-size: 17px; padding: 0; margin-left: 4px; }
+.cal-head button.add-btn {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 6px;
+  padding: 5px 12px 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  color: var(--accent); background: var(--accent-soft); border: 1.5px solid var(--accent);
+}
+.cal-head button.add-btn span { font-size: 16px; line-height: 1; }
+.cal-head button.add-btn:hover { background: var(--accent); color: #fff; }
+.cal-head button.add-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dialog h3 { font-size: 13px; color: var(--muted); margin: 16px 0 8px; }
+.cal-head { flex-wrap: wrap; row-gap: 8px; }
+@media (max-width: 600px) { .cal-head h2 { min-width: 0; } }
