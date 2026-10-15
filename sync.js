@@ -5,7 +5,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, doc, getDoc, setDoc, onSnapshot, serverTimestamp,
@@ -140,46 +140,36 @@ const form = $("#loginForm"), msg = $("#loginMsg");
 const ERRORS = {
   "auth/invalid-credential": "아이디나 비밀번호가 맞지 않아요.",
   "auth/wrong-password": "아이디나 비밀번호가 맞지 않아요.",
-  "auth/user-not-found": "없는 아이디예요. 처음이면 '계정 만들기'를 누르세요.",
-  "auth/email-already-in-use": "이미 있는 아이디예요. 로그인을 누르세요.",
-  "auth/weak-password": "비밀번호는 3자 이상으로 해주세요.",
+  "auth/user-not-found": "없는 아이디예요.",
   "auth/invalid-email": "아이디는 영문·숫자·. _ - 만 쓸 수 있어요.",
   "auth/too-many-requests": "여러 번 틀려서 잠시 막혔어요. 조금 뒤에 다시 해주세요.",
   "auth/operation-not-allowed": "Firebase에서 '이메일/비밀번호' 로그인이 꺼져 있어요.",
   "auth/network-request-failed": "인터넷 연결을 확인해 주세요.",
 };
 
-async function submit(create) {
+async function submit() {
   const id = form.id.value.trim(), pw = form.pw.value;
   if (!/^[A-Za-z0-9._-]{3,30}$/.test(id) && !id.includes("@")) {
     msg.textContent = "아이디는 영문·숫자·. _ - 로 3~30자예요.";
     return;
   }
   if (pw.length < 3) { msg.textContent = "비밀번호는 3자 이상이에요."; return; }
-  msg.textContent = create ? "계정 만드는 중…" : "로그인 중…";
+  msg.textContent = "로그인 중…";
   try {
-    if (create) {
-      await createUserWithEmailAndPassword(auth, toEmail(id), toFirebasePw(pw));
-    } else {
-      try {
-        await signInWithEmailAndPassword(auth, toEmail(id), toFirebasePw(pw));
-      } catch (e) {
-        // 이 방식 이전에 6자 이상으로 만든 계정이면 원래 비밀번호로 한 번 더 시도
-        if (pw.length >= 6 && (e.code === "auth/invalid-credential" || e.code === "auth/wrong-password")) {
-          await signInWithEmailAndPassword(auth, toEmail(id), pw);
-        } else throw e;
-      }
+    try {
+      await signInWithEmailAndPassword(auth, toEmail(id), toFirebasePw(pw));
+    } catch (e) {
+      // 짧은 비밀번호 방식 이전에 6자 이상으로 만든 계정이면 원래 비밀번호로 한 번 더 시도
+      if (pw.length >= 6 && (e.code === "auth/invalid-credential" || e.code === "auth/wrong-password")) {
+        await signInWithEmailAndPassword(auth, toEmail(id), pw);
+      } else throw e;
     }
   } catch (e) {
     msg.textContent = ERRORS[e.code] || "실패했어요: " + e.code;
   }
 }
 
-form.addEventListener("submit", (e) => { e.preventDefault(); submit(false); });
-$("#signupBtn").addEventListener("click", () => {
-  if (!form.reportValidity()) return;
-  submit(true);
-});
+form.addEventListener("submit", (e) => { e.preventDefault(); submit(); });
 
 btn.addEventListener("click", async () => {
   if (user && confirm("로그아웃할까요? 다시 로그인하면 그대로 돌아와요.")) await signOut(auth);
