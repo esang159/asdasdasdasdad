@@ -18,6 +18,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -34,10 +35,17 @@ USER_AGENT = "Mozilla/5.0 (compatible; my-work-page-crawler/1.0)"
 TIMEOUT = 30
 
 
-def http_get(url: str) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return resp.read()
+def http_get(url: str, retries: int = 1) -> bytes:
+    """GET. retries 만큼 다시 시도한다 (느린 정부 사이트 대비, 2·4·8초 간격)."""
+    for attempt in range(retries + 1):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                return resp.read()
+        except Exception:
+            if attempt == retries:
+                raise
+            time.sleep(2 ** (attempt + 1))
 
 
 def parse_date(value) -> str | None:
@@ -284,6 +292,7 @@ def parse_ntis_rows(html: str) -> list[dict]:
         if not links:
             continue
         href, onclick, title = max(links, key=lambda l: len(l[2]))
+        status = next((c for c in row["cells"] if c in ("접수중", "접수예정", "마감", "접수마감")), "")
         dates = [d for c in row["cells"] for d in (parse_date("-".join(g)) for g in DATE_RE.findall(c)) if d]
         if not dates:
             continue
@@ -294,6 +303,8 @@ def parse_ntis_rows(html: str) -> list[dict]:
         else:
             url = NTIS_LIST
         ids = re.findall(r"['\"]([A-Za-z0-9_-]{6,})['\"]", onclick + " " + href)
+        if ids and url.endswith("/view.do"):
+            url = f"{url}?roRndUid={ids[0]}"
         dates_sorted = sorted(set(dates))
         items.append({
             "title": title,
@@ -303,21 +314,33 @@ def parse_ntis_rows(html: str) -> list[dict]:
             "end": dates_sorted[-1],
             "url": url,
             "key": ids[0] if ids else title,
+            "status": status,
             "cells": row["cells"],
         })
     return items
 
 
 def fetch_ntis(cfg: dict) -> list[dict]:
+    """최근 등록순 목록을 넘기며 접수중·접수예정 공고를 모은다.
+
+    마감된 공고만 나오는 페이지가 연달아 stop_after 번 나오면 멈춘다.
+    중간 페이지가 끝내 안 열려도 그때까지 모은 공고는 버리지 않는다.
+    """
     today = datetime.now(KST).date().isoformat()
-    items, seen = [], set()
-    for page in range(1, cfg.get("max_pages", 30) + 1):
-        html = http_get(f"{NTIS_LIST}?pageIndex={page}").decode("utf-8", "replace")
+    unit = cfg.get("page_unit", 50)
+    items, seen, quiet = [], set(), 0
+    for page in range(1, cfg.get("max_pages", 60) + 1):
+        try:
+            html = http_get(f"{NTIS_LIST}?pageIndex={page}&pageUnit={unit}&recordCountPerPage={unit}",
+                            retries=3).decode("utf-8", "replace")
+        except Exception as e:
+            print(f"[ntis] {page}페이지 실패, 여기까지 모은 공고만 저장: {e}", file=sys.stderr)
+            break
         rows = parse_ntis_rows(html)
         if page == 1:
             # 사이트 구조가 바뀌었을 때 원인을 찾기 쉽도록 로그에 남긴다
             print(f"[ntis] 1페이지 {len(html)}바이트, 행 {len(rows)}개")
-            for r in rows[:3]:
+            for r in rows[:2]:
                 print("[ntis] 예시:", json.dumps(r, ensure_ascii=False)[:600])
             if not rows:
                 i = html.find("<table")
@@ -326,30 +349,32 @@ def fetch_ntis(cfg: dict) -> list[dict]:
         if not fresh:
             break
         seen.update(r["key"] for r in fresh)
-        for r in fresh:
-            if r["end"] >= today:
-                items.append({
-                    "id": make_id("ntis", r["key"]),
-                    "source": "NTIS",
-                    "kind": "연구과제",
-                    "title": r["title"],
-                    "org": r["org"],
-                    "category": "국가R&D",
-                    "start": r["start"],
-                    "end": r["end"],
-                    "posted": r["posted"],
-                    "url": r["url"],
-                    "summary": "",
-                    "target": "",
-                    "regions": detect_regions(r["title"]),
-                    "age": "",
-                    "how": "",
-                    "contact": "",
-                })
-        # 공고일 순으로 나오므로 한 페이지 전부가 오래된 공고면 멈춘다
-        if all(r["posted"] < cfg.get("since", "0000") for r in fresh):
+        open_rows = [r for r in fresh
+                     if (r["status"] in ("접수중", "접수예정")) or (not r["status"] and r["end"] >= today)]
+        quiet = 0 if open_rows else quiet + 1
+        for r in open_rows:
+            items.append({
+                "id": make_id("ntis", r["key"]),
+                "source": "NTIS",
+                "kind": "연구과제",
+                "title": r["title"],
+                "org": r["org"],
+                "category": "국가R&D" + (f" · {r['status']}" if r["status"] else ""),
+                "start": r["start"],
+                "end": r["end"],
+                "posted": r["posted"],
+                "url": r["url"],
+                "summary": "",
+                "target": "",
+                "regions": detect_regions(r["title"]),
+                "age": "",
+                "how": "",
+                "contact": "",
+            })
+        if quiet >= cfg.get("stop_after", 3):
             break
-    print(f"[ntis] {len(items)}건 (접수중·예정)")
+        time.sleep(cfg.get("delay", 0.5))   # 상대 서버에 부담을 주지 않도록 잠깐 쉰다
+    print(f"[ntis] {len(items)}건 (접수중·예정), {page}페이지까지 확인")
     return items
 
 
@@ -441,7 +466,6 @@ def main() -> int:
         jobs.append(("kstartup", lambda: fetch_kstartup(src.get("kstartup", {}))))
     if src.get("ntis", {}).get("enabled", True):
         ntis_cfg = dict(src.get("ntis", {}))
-        ntis_cfg.setdefault("since", (datetime.now(KST).date() - timedelta(days=ntis_cfg.get("days_back", 120))).isoformat())
         jobs.append(("ntis", lambda: fetch_ntis(ntis_cfg)))
     for feed in src.get("rss", []):
         jobs.append((f"rss:{feed.get('name')}", lambda feed=feed: fetch_rss(feed)))

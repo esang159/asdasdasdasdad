@@ -40,6 +40,17 @@ class NtisParseTest(unittest.TestCase):
         self.assertEqual(r["key"], "AB12345678")
 
 
+class NtisRealShapeTest(unittest.TestCase):
+    def test_status_and_link(self):
+        html = """<table><tr><td></td><td>77149</td><td>접수예정</td>
+        <td><a href="/rndgate/eg/un/ra/view.do" onclick="fn_view('1279968')">2026년 지역거점 AX 혁신 기술개발 사업 신규지원 대상과제 공고</a></td>
+        <td>과학기술정보통신부</td><td>2026.10.26</td><td>2026.11.09</td><td>D-25</td></tr></table>"""
+        r = crawl.parse_ntis_rows(html)[0]
+        self.assertEqual(r["status"], "접수예정")
+        self.assertEqual((r["start"], r["end"]), ("2026-10-26", "2026-11-09"))
+        self.assertEqual(r["url"], "https://www.ntis.go.kr/rndgate/eg/un/ra/view.do?roRndUid=1279968")
+
+
 class MergeTest(unittest.TestCase):
     cfg = {"keywords": ["AI"], "exclude_keywords": ["채용"], "keep_expired_days": 7}
 

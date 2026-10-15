@@ -24,8 +24,10 @@
     },
     "ntis": {
       "enabled": true,
-      "max_pages": 30,
-      "days_back": 120
+      "max_pages": 60,
+      "page_unit": 50,
+      "stop_after": 3,
+      "delay": 0.5
     },
     "rss": []
   }
