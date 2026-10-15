@@ -136,7 +136,7 @@ function renderCalendar() {
   for (const e of state.events) (byDate[e.date] ||= []).push(e);
   const added = new Set(state.events.map((e) => e.noticeId).filter(Boolean));
   for (const n of Object.values(state.stars)) {
-    if (n.end && !added.has(n.id)) (byDate[n.end] ||= []).push({ title: "[마감] " + n.title, kind: "deadline", notice: true });
+    if (n.end && !added.has(n.id)) (byDate[n.end] ||= []).push({ title: "[마감] " + n.title, kind: "deadline", notice: true, url: n.url });
   }
 
   let html = ["일", "월", "화", "수", "목", "금", "토"].map((d) => `<div class="dow">${d}</div>`).join("");
@@ -146,7 +146,7 @@ function renderCalendar() {
     const evs = (byDate[ds] || []).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
     const cls = ["cell", d.getMonth() !== month && "other", ds === today && "today", ds === state.cal.selected && "selected", d.getDay() === 0 && "sun"].filter(Boolean).join(" ");
     html += `<div class="${cls}" data-date="${ds}"><span class="num">${d.getDate()}</span>` +
-      evs.slice(0, 3).map((e) => `<div class="ev" style="background:${KIND_COLOR[e.kind]}" title="${esc(e.title)}">${esc((e.time ? e.time + " " : "") + e.title)}</div>`).join("") +
+      evs.slice(0, 3).map((e) => `<div class="ev" ${e.id ? `data-ev="${e.id}"` : ""} style="background:${KIND_COLOR[e.kind]}" title="${esc(e.title)}">${esc((e.time ? e.time + " " : "") + e.title)}</div>`).join("") +
       (evs.length > 3 ? `<div class="more">+${evs.length - 3}</div>` : "") + `</div>`;
   }
   $("#calGrid").innerHTML = html;
@@ -182,10 +182,30 @@ function resetEventForm() {
   $("#formTitle").textContent = "일정 추가";
 }
 
+// 날짜를 누르면 그 날을 고르고, 일정 칸을 누르면 수정 팝업, + 를 누르면 고른 날에 추가 팝업.
 $("#calGrid").addEventListener("click", (e) => {
   const cell = e.target.closest(".cell");
-  if (cell) selectDate(cell.dataset.date);
+  if (!cell) return;
+  const evId = e.target.closest(".ev")?.dataset.ev;
+  selectDate(cell.dataset.date);
+  if (evId) openEventDialog(evId);
 });
+$("#calAdd").addEventListener("click", () => openEventDialog());
+
+function openEventDialog(editId) {
+  resetEventForm();
+  renderDay();
+  if (editId) editEvent(editId);
+  const dlg = $("#eventDialog");
+  if (!dlg.open) dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "");
+  if (!editId) $("#eventForm").title.focus();
+}
+function closeEventDialog() {
+  const dlg = $("#eventDialog");
+  if (dlg.open) dlg.close ? dlg.close() : dlg.removeAttribute("open");
+}
+$("#dialogClose").addEventListener("click", closeEventDialog);
+$("#eventDialog").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeEventDialog(); });
 $("#calPrev").addEventListener("click", () => moveMonth(-1));
 $("#calNext").addEventListener("click", () => moveMonth(1));
 $("#calToday").addEventListener("click", () => {
@@ -203,14 +223,18 @@ $("#dayEvents").addEventListener("click", (e) => {
   const id = e.target.dataset.edit;
   if (!id) return;
   e.preventDefault();
+  editEvent(id);
+});
+function editEvent(id) {
   const ev = state.events.find((x) => x.id === id);
+  if (!ev) return;
   const f = $("#eventForm");
   for (const k of ["id", "title", "date", "time", "kind", "memo"]) f[k].value = ev[k] || "";
   f.date.value = compact(ev.date);
   $("#eventDelete").hidden = false;
   $("#formTitle").textContent = "일정 수정";
   f.title.focus();
-});
+}
 
 $("#eventForm").addEventListener("submit", (e) => {
   e.preventDefault();
@@ -225,6 +249,7 @@ $("#eventForm").addEventListener("submit", (e) => {
   const [y, m] = data.date.split("-").map(Number);
   state.cal.year = y; state.cal.month = m - 1;
   resetEventForm();
+  closeEventDialog();
   renderAll();
 });
 $("#eventDelete").addEventListener("click", () => {
@@ -233,6 +258,7 @@ $("#eventDelete").addEventListener("click", () => {
   state.events = state.events.filter((x) => x.id !== id);
   store.set("events", state.events);
   resetEventForm();
+  closeEventDialog();
   renderAll();
 });
 $("#eventReset").addEventListener("click", resetEventForm);
@@ -609,6 +635,52 @@ $("#importFile").addEventListener("change", async (e) => {
   e.target.value = "";
 });
 
+// ---------------------------------------------------------------- 서울 날씨
+// Open-Meteo(키 불필요)에서 바로 받고, 막혀 있으면 매일 수집기가 저장한 data/weather.json 을 쓴다.
+
+const WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.978"
+  + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+  + "&timezone=Asia%2FSeoul&forecast_days=2";
+
+function weatherLabel(code) {
+  if (code === 0) return "맑음";
+  if (code === 1) return "대체로 맑음";
+  if (code === 2) return "구름 조금";
+  if (code === 3) return "흐림";
+  if (code === 45 || code === 48) return "안개";
+  if (code >= 51 && code <= 57) return "이슬비";
+  if (code >= 61 && code <= 67) return "비";
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "눈";
+  if (code >= 80 && code <= 82) return "소나기";
+  if (code >= 95) return "뇌우";
+  return "-";
+}
+
+async function loadWeather() {
+  let data = null;
+  for (const url of [WEATHER_URL, "data/weather.json"]) {
+    try {
+      const res = await fetch(url, { cache: "no-store" });
+      if (res.ok) { data = await res.json(); break; }
+    } catch { /* 다음 방법 시도 */ }
+  }
+  const d = data?.daily;
+  if (!d?.time?.length) return;
+  const today = todayStr();
+  const days = d.time.map((t, i) => ({
+    t, code: d.weather_code[i], hi: d.temperature_2m_max[i], lo: d.temperature_2m_min[i], pop: d.precipitation_probability_max[i],
+  })).filter((x) => x.t >= today).slice(0, 2);
+  if (!days.length) return;
+  const el = $("#weather");
+  el.innerHTML = `<span class="w-city">서울</span>` + days.map((x) => `
+    <span class="w-day" title="${esc(x.t)}">
+      <b>${x.t === today ? "오늘" : "내일"}</b> ${esc(weatherLabel(x.code))}
+      <span class="w-temp">${Math.round(x.hi)}°/${Math.round(x.lo)}°</span>
+      <span class="w-pop ${x.pop >= 60 ? "wet" : ""}">강수 ${x.pop ?? "-"}%</span>
+    </span>`).join("");
+  el.hidden = false;
+}
+
 // ---------------------------------------------------------------- 시작
 
 function renderAll() {
@@ -627,4 +699,5 @@ function renderAll() {
   showTab(document.getElementById("tab-" + tab) ? tab : "home");
   renderAll();
   loadNotices();
+  loadWeather();
 })();

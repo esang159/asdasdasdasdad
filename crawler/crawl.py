@@ -411,9 +411,26 @@ def merge(old_items: list[dict], new_items: list[dict], cfg: dict, today: date) 
     return result
 
 
+WEATHER_URL = ("https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.978"
+               "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+               "&timezone=Asia%2FSeoul&forecast_days=2")
+
+
+def save_weather() -> None:
+    """서울 오늘·내일 예보를 data/weather.json 에 저장 (페이지가 직접 못 불러올 때 쓰는 예비본)."""
+    try:
+        data = json.loads(http_get(WEATHER_URL))
+        data["fetched_at"] = datetime.now(KST).isoformat(timespec="seconds")
+        (ROOT / "data" / "weather.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        print("[weather] 저장")
+    except Exception as e:
+        print(f"[weather] 실패: {e}", file=sys.stderr)
+
+
 def main() -> int:
     cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     src = cfg.get("sources", {})
+    save_weather()
 
     collected: list[dict] = []
     errors: list[str] = []

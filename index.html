@@ -14,7 +14,10 @@
       <button data-tab="notices">사업공고</button>
       <button data-tab="todo">할 일 · 메모</button>
     </nav>
-    <div class="today-label" id="todayLabel"></div>
+    <div class="today-label">
+      <div id="weather" class="weather" hidden></div>
+      <span id="todayLabel"></span>
+    </div>
   </header>
 
   <main>
@@ -47,7 +50,7 @@
           <ul id="homeNew" class="list"></ul>
         </div>
       </div>
-      <div class="cal-layout">
+      <div class="cal-full">
         <div class="card">
           <div class="cal-head">
             <button id="calPrev" aria-label="이전 달">‹</button>
@@ -57,36 +60,10 @@
             <span class="legend">
               <span><i class="dot k-work"></i>업무</span><span><i class="dot k-meeting"></i>회의</span>
               <span><i class="dot k-deadline"></i>마감</span><span><i class="dot k-personal"></i>개인</span>
+              <button type="button" id="calAdd" class="add-btn" title="일정 추가" aria-label="일정 추가">+</button>
             </span>
           </div>
           <div class="cal-grid" id="calGrid"></div>
-        </div>
-        <div class="card">
-          <h2 id="dayTitle">일정</h2>
-          <ul id="dayEvents" class="list"></ul>
-          <h3 id="formTitle">일정 추가</h3>
-          <form id="eventForm" class="stack">
-            <input type="hidden" name="id">
-            <label>제목 <input name="title" required></label>
-            <div class="row">
-              <label>날짜 <input name="date" class="ymd" inputmode="numeric" maxlength="10" placeholder="20261015" required></label>
-              <label>시간 <input name="time" type="time"></label>
-            </div>
-            <label>분류
-              <select name="kind">
-                <option value="work">업무</option>
-                <option value="meeting">회의</option>
-                <option value="deadline">마감</option>
-                <option value="personal">개인</option>
-              </select>
-            </label>
-            <label>메모 <textarea name="memo" rows="2"></textarea></label>
-            <div class="row">
-              <button type="submit">저장</button>
-              <button type="button" id="eventDelete" class="danger" hidden>삭제</button>
-              <button type="button" id="eventReset" class="ghost">새로 쓰기</button>
-            </div>
-          </form>
         </div>
       </div>
 
@@ -155,6 +132,38 @@
       </div>
     </section>
   </main>
+
+
+  <dialog id="eventDialog" class="dialog" aria-labelledby="dayTitle">
+    <div class="dialog-head">
+      <h2 id="dayTitle">일정</h2>
+      <button type="button" id="dialogClose" class="icon" aria-label="닫기">×</button>
+    </div>
+    <ul id="dayEvents" class="list"></ul>
+    <h3 id="formTitle">일정 추가</h3>
+    <form id="eventForm" class="stack">
+      <input type="hidden" name="id">
+      <label>제목 <input name="title" required></label>
+      <div class="row">
+        <label>날짜 <input name="date" class="ymd" inputmode="numeric" maxlength="10" placeholder="20261015" required></label>
+        <label>시간 <input name="time" type="time"></label>
+      </div>
+      <label>분류
+        <select name="kind">
+          <option value="work">업무</option>
+          <option value="meeting">회의</option>
+          <option value="deadline">마감</option>
+          <option value="personal">개인</option>
+        </select>
+      </label>
+      <label>메모 <textarea name="memo" rows="2"></textarea></label>
+      <div class="row">
+        <button type="submit">저장</button>
+        <button type="button" id="eventDelete" class="danger" hidden>삭제</button>
+        <button type="button" id="eventReset" class="ghost">새로 쓰기</button>
+      </div>
+    </form>
+  </dialog>
 
   <script src="app.js"></script>
 </body>
