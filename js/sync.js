@@ -118,6 +118,9 @@ onAuthStateChanged(auth, (u) => {
   $("#hubUser").textContent = u ? toId(u.email) : "";
   if (u) {
     btn.title = toId(u.email) + " 로그인 중";
+    // 다른 서비스(예: travel/)에서 로그인하러 왔으면 로그인 뒤 그 페이지로 돌려보낸다
+    const next = new URLSearchParams(location.search).get("next");
+    if (next && /^[a-z0-9_-]+\/(#[\w\/-]*)?$/.test(next)) { location.replace(next); return; }
     start();
   }
 });

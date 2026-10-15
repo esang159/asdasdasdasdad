@@ -2,6 +2,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>여행노트 트립플래너</title>
+<!-- 로그인해야 보인다: 확인될 때까지 가려 두고, 안 되면 로그인 페이지로 (../js/auth-guard.js) -->
+<style>html.sol-guard body{visibility:hidden}</style>
+<script>
+  document.documentElement.classList.add("sol-guard");
+  window.solGuardFail = function () { location.replace("../?next=" + encodeURIComponent("travel/" + location.hash)); };
+  setTimeout(function () { if (!window.solGuardOk) window.solGuardFail(); }, 15000);
+</script>
+<script type="module" src="../js/auth-guard.js?v=20261015s" onerror="window.solGuardFail()"></script>
 <link rel="icon" href="../favicon.ico" sizes="any"><link rel="icon" type="image/png" href="../assets/favicon/favicon-32.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Nanum+Pen+Script&display=swap">
 <style>
