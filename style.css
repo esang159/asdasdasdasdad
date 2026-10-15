@@ -436,7 +436,7 @@ body.hub-mode > header, body.hub-mode > main { display: none; }
   position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
   min-height: 230px; padding: 24px 22px 20px; text-align: left;
   background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 18px;
-  font: inherit; cursor: pointer; overflow: hidden;
+  font: inherit; cursor: pointer; overflow: hidden; text-decoration: none;
   transition: transform .15s, border-color .15s, box-shadow .15s;
 }
 .svc::after {   /* 카드 오른쪽 위에 은은한 색 번짐 */
