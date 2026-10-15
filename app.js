@@ -773,13 +773,17 @@ async function loadWeather() {
     } catch { /* 다음 방법 시도 */ }
   }
   const d = data?.daily;
-  if (!d?.time?.length) return;
+  const el = $("#weather");
+  if (!d?.time?.length) {
+    el.innerHTML = `<span class="w-city">서울</span><span class="w-off">날씨를 불러오지 못했어요</span>`;
+    el.hidden = false;
+    return;
+  }
   const today = todayStr();
   const days = d.time.map((t, i) => ({
     t, code: d.weather_code[i], hi: d.temperature_2m_max[i], lo: d.temperature_2m_min[i], pop: d.precipitation_probability_max[i],
   })).filter((x) => x.t >= today).slice(0, 2);
   if (!days.length) return;
-  const el = $("#weather");
   el.innerHTML = `<span class="w-city">서울</span>` + days.map((x) => `
     <span class="w-day" title="${esc(x.t)}">
       <b>${x.t === today ? "오늘" : "내일"}</b> ${esc(weatherLabel(x.code))}

@@ -70,8 +70,11 @@ a:hover { text-decoration: underline; }
   color: var(--muted); cursor: pointer; font: inherit;
 }
 .tabs button.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-.today-label { margin-left: auto; color: var(--muted); display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
-.weather { display: flex; align-items: center; gap: 10px; font-size: 12px; flex-wrap: wrap; }
+.today-label { margin-left: auto; color: var(--muted); display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; }
+#todayLabel { font-size: 13px; }
+.weather { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.weather .w-off { color: var(--muted); }
+@media (max-width: 600px) { .today-label { align-items: stretch; text-align: left; width: 100%; } .weather { justify-content: flex-start; } }
 .weather .w-city { font-weight: 600; color: var(--text); }
 .weather .w-day { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); }
 .weather .w-day b { color: var(--text); font-weight: 600; }
