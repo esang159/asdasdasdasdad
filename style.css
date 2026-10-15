@@ -7,49 +7,84 @@
   font-display: swap;
 }
 
+/* 따뜻하고 차분한 톤: 데운 미색 바탕, 호두나무 갈색 강조, 채도를 낮춘 세이지·자두·벽돌색 */
 :root {
-  --bg: #f5f6f8;
-  --card: #ffffff;
-  --text: #1d2330;
-  --muted: #6b7280;
-  --line: #e4e7ec;
-  --accent: #2f6fed;
-  --accent-soft: #e8efff;
-  --danger: #d64545;
-  --c-work: #2f6fed;
-  --c-meeting: #8b5cf6;
-  --c-deadline: #e5533d;
-  --c-personal: #16a34a;
-  --claude: #d97757;
-  --support: #0f8a6c;
-  --support-soft: #dcf3ec;
-  --rnd: #6d3fd8;
-  --rnd-soft: #ece5fd;
-  --hot: #d24a2f;
-  --hot-soft: #fde8e3;
-  --warn: #a86b00;
-  --warn-soft: #fff4d6;
-  --danger-soft: #fde2e2;
+  --bg: #f4f0ea;
+  --card: #fffdfa;
+  --text: #2e2823;
+  --muted: #7c7166;
+  --line: #e6ddd2;
+  --accent: #8a5a3c;
+  --accent-soft: #f3e7dc;
+  --on-accent: #ffffff;
+  --danger: #b03a2e;
+  --c-work: #8a5a3c;
+  --c-meeting: #7a6596;
+  --c-deadline: #b5543c;
+  --c-personal: #5b7f6a;
+  --claude: #c96f4f;
+  --support: #4f7a5a;
+  --support-soft: #e4eee3;
+  --rnd: #7a5a8c;
+  --rnd-soft: #eee5f1;
+  --hot: #a94b32;
+  --hot-soft: #f6e2d9;
+  --warn: #8f6416;
+  --warn-soft: #f5e9cf;
+  --danger-soft: #f5dcd8;
+  --star: #c98a1b;
+  --shadow: rgba(60, 40, 20, .10);
+  --backdrop: rgba(40, 30, 20, .45);
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14161b;
-    --card: #1d2027;
-    --text: #e6e8ec;
-    --muted: #9aa1ad;
-    --line: #2d313a;
-    --accent: #6b9bff;
-    --accent-soft: #23304d;
-    --support: #4cc9a4;
-    --support-soft: #173a31;
-    --rnd: #ad8cff;
-    --rnd-soft: #2c2350;
-    --hot: #ff9b85;
-    --hot-soft: #3d2420;
-    --warn: #f0c060;
-    --warn-soft: #3a2f14;
-    --danger-soft: #3f1f22;
+  :root:not([data-theme="light"]) {
+    --bg: #1b1815;
+    --card: #24201c;
+    --text: #ece4da;
+    --muted: #a69a8c;
+    --line: #3a332c;
+    --accent: #d2a07c;
+    --accent-soft: #3a2c22;
+    --on-accent: #1b1815;
+    --danger: #e07a6c;
+    --support: #93bf9c;
+    --support-soft: #26332a;
+    --rnd: #c3a5d5;
+    --rnd-soft: #33283a;
+    --hot: #e8a089;
+    --hot-soft: #3d2820;
+    --warn: #e2bd74;
+    --warn-soft: #3a2f18;
+    --danger-soft: #402421;
+    --star: #e2b24e;
+    --shadow: rgba(0, 0, 0, .35);
+    --backdrop: rgba(0, 0, 0, .55);
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1815;
+  --card: #24201c;
+  --text: #ece4da;
+  --muted: #a69a8c;
+  --line: #3a332c;
+  --accent: #d2a07c;
+  --accent-soft: #3a2c22;
+  --on-accent: #1b1815;
+  --danger: #e07a6c;
+  --support: #93bf9c;
+  --support-soft: #26332a;
+  --rnd: #c3a5d5;
+  --rnd-soft: #33283a;
+  --hot: #e8a089;
+  --hot-soft: #3d2820;
+  --warn: #e2bd74;
+  --warn-soft: #3a2f18;
+  --danger-soft: #402421;
+  --star: #e2b24e;
+  --shadow: rgba(0, 0, 0, .35);
+  --backdrop: rgba(0, 0, 0, .55);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -98,7 +133,12 @@ main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
   background: var(--card); border: 1px solid var(--line); border-radius: 12px;
   padding: 16px 18px; margin-bottom: 16px; min-width: 0;
 }
-.card h2 { font-size: 15px; margin: 0 0 12px; }
+.card h2 {
+  font-size: 16px; margin: 0 0 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--line); letter-spacing: -.01em;
+}
+.card h2 small { font-size: 12px; }
+.cal-head h2 { border-bottom: 0; padding-bottom: 0; }
 .card h2 small { color: var(--muted); font-weight: 400; }
 .card h3 { font-size: 13px; color: var(--muted); margin: 18px 0 8px; }
 .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -124,7 +164,7 @@ input, select, textarea {
 }
 textarea { resize: vertical; }
 button {
-  background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+  background: var(--accent); color: var(--on-accent); border: 0; border-radius: 8px;
   padding: 7px 14px; cursor: pointer; white-space: nowrap;
 }
 button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
@@ -193,11 +233,11 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .cal-grid .cell.selected { outline: 2px solid var(--accent); outline-offset: -2px; }
 .cal-grid .num { font-size: 12px; font-weight: 600; }
 .cal-grid .cell.today .num {
-  background: var(--accent); color: #fff; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent); border-radius: 50%;
   display: inline-block; width: 22px; height: 22px; text-align: center; line-height: 22px;
 }
 .cal-grid .sun .num { color: var(--danger); }
-.cal-grid .cell.today.sun .num { color: #fff; }
+.cal-grid .cell.today.sun .num { color: var(--on-accent); }
 .cal-grid .ev {
   font-size: 11px; border-radius: 4px; padding: 0 4px; margin-top: 2px;
   color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -218,9 +258,9 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
   padding: 8px 18px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
 }
 .kind-toggle button .cnt { font-size: 11px; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
-.kind-toggle button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
-.kind-toggle button.k-support.on { background: var(--support); color: #fff; }
-.kind-toggle button.k-rnd.on { background: var(--rnd); color: #fff; }
+.kind-toggle button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 2px var(--shadow); }
+.kind-toggle button.k-support.on { background: var(--support); color: var(--on-accent); }
+.kind-toggle button.k-rnd.on { background: var(--rnd); color: var(--on-accent); }
 .kind-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .notice-tools { padding-top: 14px; border-top: 1px solid var(--line); }
 .notice.is-support { box-shadow: inset 3px 0 0 var(--support); padding-left: 12px; }
@@ -242,7 +282,7 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .notice .actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
 .notice .actions button { font-size: 12px; padding: 4px 10px; }
 .star { background: none; color: var(--muted); font-size: 18px; padding: 0 4px; }
-.star.on { color: #f5b301; }
+.star.on { color: var(--star); }
 #homeTodo .grow, #todoList .grow { white-space: normal; }
 @media (max-width: 600px) {
   .notice { flex-wrap: wrap; }
@@ -266,9 +306,9 @@ input.ymd { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 .dialog {
   border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px;
   width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto;
-  background: var(--card); color: var(--text); box-shadow: 0 20px 50px rgba(0,0,0,.25);
+  background: var(--card); color: var(--text); box-shadow: 0 20px 50px var(--shadow);
 }
-.dialog::backdrop { background: rgba(15, 18, 25, .45); }
+.dialog::backdrop { background: var(--backdrop); }
 .dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
 .dialog-head h2 { margin: 0; font-size: 16px; }
 .dialog-head .icon { font-size: 22px; }
@@ -279,7 +319,7 @@ input.ymd { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
   color: var(--accent); background: var(--accent-soft); border: 1.5px solid var(--accent);
 }
 .cal-head button.add-btn span { font-size: 16px; line-height: 1; }
-.cal-head button.add-btn:hover { background: var(--accent); color: #fff; }
+.cal-head button.add-btn:hover { background: var(--accent); color: var(--on-accent); }
 .cal-head button.add-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dialog h3 { font-size: 13px; color: var(--muted); margin: 16px 0 8px; }
 .cal-head { flex-wrap: wrap; row-gap: 8px; }
@@ -318,3 +358,4 @@ input.ymd { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 .work-todo-form { margin: 4px 0 0 6px; }
 .work-todo-form input { border: 0; border-bottom: 1px dashed var(--line); border-radius: 0; padding: 4px 4px; font-size: 13px; background: transparent; }
 .work-todo-form input:focus { outline: none; border-bottom-color: var(--accent); }
+input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
