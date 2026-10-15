@@ -63,6 +63,8 @@
   .util .sp{margin-left:auto; display:flex; gap:14px}
   .util a{text-decoration:none; opacity:.85}
   .util a:hover{opacity:1}
+  .util .sol-back{opacity:1; font-weight:700; color:#fff; background:rgba(255,255,255,.14); border-radius:5px; padding:2px 9px; margin-left:-9px}
+  .util .sol-back:hover{background:#e8875f}
 
   .topbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:60; background:#fff; border-bottom:1px solid var(--line)}
   .topbar-in{max-width:1260px; margin:0 auto; padding:10px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap}
@@ -592,6 +594,12 @@
     display:flex; align-items:center; gap:6px; width:100%; margin-top:7px;
     padding-top:7px; border-top:1px dashed var(--line-2); font-size:10.5px; color:var(--ink-4);
   }
+  .hoplinks .hopask{
+    margin-right:auto; font-size:10.5px; font-weight:700; color:#fff; background:var(--c-move);
+    border-radius:5px; padding:3px 9px;
+  }
+  .hoplinks .hopask:hover{background:#155a9c}
+  .hoplinks .hopask:disabled{background:var(--line-2); color:var(--ink-3); cursor:default}
   .hoplinks a{
     color:var(--c-move); text-decoration:none; font-weight:600;
     border:1px solid var(--line-2); border-radius:5px; padding:2px 7px; background:#fff;
@@ -944,6 +952,7 @@
 
 <div class="util">
   <div class="util-in">
+    <a href="../#hub" class="sol-back" title="Sol Works 서비스 선택으로">← Sol Works</a>
     <span>실시간 예약 연동 · KTX · 국내선 · 숙소</span>
     <span class="sp"><a href="#" onclick="return false">고객센터</a><a href="#" onclick="return false">앱 다운로드</a></span>
   </div>
@@ -2505,11 +2514,40 @@ function setTransitKey(v){
   try{
     localStorage.setItem('odsay-key', v || 'off');
   }catch(e){}
-  TRANSIT_CACHE = {};
+  Object.keys(TRANSIT_CACHE).forEach(function(k){ if(TRANSIT_CACHE[k].state==='error') delete TRANSIT_CACHE[k]; });
   renderKeyBox();
   refresh();
 }
-var TRANSIT_CACHE = {};        /* 같은 구간을 두 번 묻지 않는다 */
+/* 무료 키는 하루 30회뿐이다. 그래서
+   - 구간마다 [버스 번호 불러오기]를 눌렀을 때만 묻고
+   - 받아 온 노선은 브라우저에 남겨 두어 같은 구간은 다시 묻지 않으며
+   - 오늘 몇 번 썼는지 세어 30회가 차면 더 묻지 않는다 */
+var ODSAY_DAILY = 30;
+var TRANSIT_CACHE = loadTransitCache();
+var TRANSIT_WAIT = {};         /* 불러오는 중에 화면이 다시 그려지면 새 막대도 결과를 받는다 */
+function loadTransitCache(){
+  try{ return JSON.parse(localStorage.getItem('odsay-cache') || '{}') || {}; }catch(e){ return {}; }
+}
+function saveTransitCache(){
+  try{
+    var keep = Object.keys(TRANSIT_CACHE).filter(function(k){
+      var s = TRANSIT_CACHE[k].state; return s==='ok' || s==='none';
+    }).slice(-300);
+    var out = {};
+    keep.forEach(function(k){ out[k] = TRANSIT_CACHE[k]; });
+    localStorage.setItem('odsay-cache', JSON.stringify(out));
+  }catch(e){}
+}
+function odsayDay(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function transitUsed(){
+  try{
+    var u = JSON.parse(localStorage.getItem('odsay-used') || '{}');
+    return u.d===odsayDay() ? (u.n||0) : 0;
+  }catch(e){ return 0; }
+}
+function bumpTransitUsed(){
+  try{ localStorage.setItem('odsay-used', JSON.stringify({d:odsayDay(), n:transitUsed()+1})); }catch(e){}
+}
 function hopKey(hp){ return hp.sy.toFixed(5)+','+hp.sx.toFixed(5)+'>'+hp.ey.toFixed(5)+','+hp.ex.toFixed(5); }
 var TTYPE = {1:'지하철', 2:'버스'};
 /* ODsay 응답에서 필요한 것만 추린다 */
@@ -2540,12 +2578,28 @@ function readTransit(j){
     transfers: (info.busTransitCount||0) + (info.subwayTransitCount||0) - 1
   };
 }
-function fetchTransit(hp, done){
+/* ask가 없으면 저장된 결과만 돌려준다 (없으면 idle). ask가 있을 때만 실제로 묻는다 */
+function fetchTransit(hp, done, ask){
   var k = transitKey();
   if(!k) return done({state:'nokey'});
   var ck = hopKey(hp);
-  if(TRANSIT_CACHE[ck]) return done(TRANSIT_CACHE[ck]);
+  var c = TRANSIT_CACHE[ck];
+  if(c && c.state==='loading'){ (TRANSIT_WAIT[ck] = TRANSIT_WAIT[ck] || []).push(done); return done(c); }
+  if(c && (c.state!=='error' || !ask)) return done(c);
+  if(!ask) return done({state:'idle'});
+  if(transitUsed() >= ODSAY_DAILY) return done({state:'limit'});
   TRANSIT_CACHE[ck] = {state:'loading'};
+  TRANSIT_WAIT[ck] = [];
+  bumpTransitUsed();
+  renderKeyBox();
+  var finish = function(res){
+    TRANSIT_CACHE[ck] = res;
+    saveTransitCache();
+    renderKeyBox();
+    done(res);
+    (TRANSIT_WAIT[ck] || []).forEach(function(f){ if(f!==done) f(res); });
+    delete TRANSIT_WAIT[ck];
+  };
   var url = 'https://api.odsay.com/v1/api/searchPubTransPathT'
           + '?SX='+hp.sx+'&SY='+hp.sy+'&EX='+hp.ex+'&EY='+hp.ey
           + '&OPT=0&SearchType=0&apiKey='+encodeURIComponent(k);
@@ -2558,10 +2612,9 @@ function fetchTransit(hp, done){
       var t = readTransit(j);
       res = t ? {state:'ok', data:t} : {state:'none'};
     }
-    TRANSIT_CACHE[ck] = res; done(res);
+    finish(res);
   }).catch(function(e){
-    var res = {state:'error', msg:'불러오지 못했습니다 (' + (e && e.message ? e.message : '연결 실패') + ')'};
-    TRANSIT_CACHE[ck] = res; done(res);
+    finish({state:'error', msg:'불러오지 못했습니다 (' + (e && e.message ? e.message : '연결 실패') + ')'});
   });
 }
 /* 지도 앱으로 바로 넘기는 주소 — 설정 없이도 실제 노선을 볼 수 있다 */
@@ -4302,9 +4355,29 @@ function hopBar(hp){
     return bar;
   }
   bar.innerHTML = withLinks(guess);
-  fetchTransit(hp, function(res){
+  /* 저장된 노선이 있으면 바로, 없으면 [버스 번호 불러오기] 단추를 단다 (누를 때만 하루 30회 중 1회 사용) */
+  function askBtn(label, off){
+    var b = el('button', 'hopask', label);
+    b.type = 'button';
+    if(off) b.disabled = true;
+    b.addEventListener('click', function(){
+      b.disabled = true; b.textContent = '불러오는 중…';
+      fetchTransit(hp, paint, true);
+    });
+    var links = bar.querySelector('.hoplinks');
+    links.insertBefore(b, links.firstChild);
+  }
+  function paint(res){
     /* 캐시에 있으면 이 콜백이 바로 돌아온다. 아직 화면에 붙기 전이어도 그려 둔다 */
-    if(res.state==='ok'){
+    if(res.state==='idle'){
+      bar.innerHTML = withLinks(guess);
+      askBtn('버스 번호 불러오기');
+    } else if(res.state==='limit'){
+      bar.innerHTML = withLinks(guess);
+      askBtn('오늘 조회 '+ODSAY_DAILY+'회를 다 썼어요', true);
+    } else if(res.state==='loading'){
+      bar.innerHTML = withLinks(guess + '<small class="hnote">노선을 불러오는 중…</small>');
+    } else if(res.state==='ok'){
       bar.classList.add('real');
       bar.innerHTML = '<div class="hoptop">'+head('<small class="hreal">실제 노선</small>')+'</div>'
                     + hopSteps(res.data)
@@ -4316,8 +4389,10 @@ function hopBar(hp){
       bar.innerHTML = withLinks(guess + '<small class="hnote">이 구간은 대중교통 노선이 잡히지 않습니다</small>');
     } else if(res.state==='error'){
       bar.innerHTML = withLinks(guess + '<small class="hnote">노선을 불러오지 못했습니다 · '+res.msg+'</small>');
+      askBtn('다시 불러오기', transitUsed() >= ODSAY_DAILY);
     }
-  });
+  }
+  fetchTransit(hp, paint);
   return bar;
 }
 
@@ -4884,14 +4959,14 @@ function renderKeyBox(){
   box.textContent='';
   if(k){
     box.innerHTML = '<span class="ok">실제 노선 켜짐</span>'+
-      '<span>구간마다 몇 번 버스를 어디서 타고 내리는지 보여 줍니다 · 키 '+
-      k.slice(0,4)+'····'+k.slice(-3)+'</span>';
+      '<span>버스 구간의 [버스 번호 불러오기]를 누르면 몇 번 버스를 어디서 타고 내리는지 보여 줍니다 · '+
+      '오늘 <b>'+transitUsed()+' / '+ODSAY_DAILY+'회</b> 사용 · 한 번 받은 구간은 다시 세지 않습니다</span>';
     var off=el('button',null,'끄기'); off.type='button';
     off.addEventListener('click', function(){ setTransitKey(''); });
     box.appendChild(off);
   } else {
     box.innerHTML = '<span><b>실제 버스 번호</b>를 보려면 ODsay 무료 키를 넣으세요 · '+
-      '<a href="https://lab.odsay.com" target="_blank" rel="noopener">키 받기</a> (하루 1,000회 무료)</span>';
+      '<a href="https://lab.odsay.com" target="_blank" rel="noopener">키 받기</a> (하루 30회 무료)</span>';
     var inp=el('input'); inp.type='text'; inp.placeholder='ODsay API 키를 붙여넣기';
     inp.setAttribute('aria-label','ODsay API 키');
     var go=el('button','on','적용'); go.type='button';
@@ -5157,6 +5232,4 @@ window.addEventListener('hashchange',function(){
 </script>
 
 
-<a href="../#hub" class="sol-back" title="Sol Works 서비스 선택으로">← Sol Works</a>
-<style>.sol-back{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:90;background:#000;color:#fff;font:600 12.5px/1 system-ui,sans-serif;text-decoration:none;padding:9px 13px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:.85}.sol-back:hover{opacity:1;background:#e8875f}</style>
 </body></html>
