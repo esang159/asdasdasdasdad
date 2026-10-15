@@ -14,7 +14,7 @@
       <button data-tab="notices">사업공고</button>
       <button data-tab="todo">할 일 · 메모</button>
     </nav>
-    <div class="today" id="todayLabel"></div>
+    <div class="today-label" id="todayLabel"></div>
   </header>
 
   <main>
@@ -32,14 +32,15 @@
         <div class="ask-foot"><span class="meta" id="askNote"></span><button type="button" id="askClose" class="ghost">닫기</button></div>
       </div>
 
-      <div class="grid3">
+      <div class="grid2">
         <div class="card">
           <h2>할 일</h2>
+          <form id="homeTodoForm" class="inline-form todo-form">
+            <input name="text" placeholder="할 일 추가" required>
+            <input name="due" class="ymd" inputmode="numeric" maxlength="10" placeholder="마감 20261015" aria-label="마감일 (예: 20261015)">
+            <button>추가</button>
+          </form>
           <ul id="homeTodo" class="list"></ul>
-        </div>
-        <div class="card">
-          <h2>마감 임박 공고 <small>(관심공고 · 7일 이내)</small></h2>
-          <ul id="homeDeadline" class="list"></ul>
         </div>
         <div class="card">
           <h2>새로 올라온 공고 <small id="homeNewCount"></small></h2>
@@ -68,7 +69,7 @@
             <input type="hidden" name="id">
             <label>제목 <input name="title" required></label>
             <div class="row">
-              <label>날짜 <input name="date" type="date" required></label>
+              <label>날짜 <input name="date" class="ymd" inputmode="numeric" maxlength="10" placeholder="20261015" required></label>
               <label>시간 <input name="time" type="time"></label>
             </div>
             <label>분류
@@ -131,9 +132,9 @@
       <div class="grid2">
         <div class="card">
           <h2>할 일</h2>
-          <form id="todoForm" class="inline-form">
+          <form id="todoForm" class="inline-form todo-form">
             <input name="text" placeholder="할 일을 입력하고 Enter" required>
-            <input name="due" type="date">
+            <input name="due" class="ymd" inputmode="numeric" maxlength="10" placeholder="마감 20261015" aria-label="마감일 (예: 20261015)">
             <button>추가</button>
           </form>
           <ul id="todoList" class="list"></ul>

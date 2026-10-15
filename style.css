@@ -70,7 +70,7 @@ a:hover { text-decoration: underline; }
   color: var(--muted); cursor: pointer; font: inherit;
 }
 .tabs button.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-.today { margin-left: auto; color: var(--muted); }
+.today-label { margin-left: auto; color: var(--muted); }
 
 main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
 .tab { display: none; }
@@ -233,3 +233,9 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
   .kind-toggle { display: flex; }
   .kind-toggle button { flex: 1; justify-content: center; padding: 8px 6px; }
 }
+.todo input[type=checkbox] { width: auto; flex: none; cursor: pointer; }
+.todo.done .grow { text-decoration: line-through; color: var(--muted); }
+.todo .due { margin: 0; font-variant-numeric: tabular-nums; }
+.todo-form input[name=text] { flex: 3; }
+.todo-form input.ymd { flex: 1; min-width: 120px; max-width: 160px; font-variant-numeric: tabular-nums; }
+input.ymd { font-variant-numeric: tabular-nums; letter-spacing: .02em; }

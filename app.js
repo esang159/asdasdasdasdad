@@ -46,6 +46,36 @@ const pad = (n) => String(n).padStart(2, "0");
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const todayStr = () => ymd(new Date());
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+// "20261015", "2026-10-15", "2026.10.15" → "2026-10-15". 날짜가 아니면 null.
+function toIso(text) {
+  const m = String(text || "").trim().match(/^(\d{4})[-./]?(\d{1,2})[-./]?(\d{1,2})$/);
+  if (!m) return null;
+  const [y, mo, d] = m.slice(1).map(Number);
+  const dt = new Date(y, mo - 1, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+  return `${y}-${pad(mo)}-${pad(d)}`;
+}
+const compact = (iso) => (iso || "").replace(/-/g, "");
+
+// 숫자 날짜 칸을 읽는다. 비었으면 "" (필수면 undefined), 잘못되면 안내를 띄우고 undefined.
+function readYmd(input, required) {
+  const v = input.value.trim();
+  input.setCustomValidity("");
+  if (!v && !required) return "";
+  const iso = toIso(v);
+  if (!iso) {
+    input.setCustomValidity("날짜를 20261015 처럼 8자리 숫자로 입력해 주세요.");
+    input.reportValidity();
+    return undefined;
+  }
+  return iso;
+}
+document.addEventListener("input", (e) => {
+  if (!e.target.classList.contains("ymd")) return;
+  e.target.setCustomValidity("");
+  e.target.value = e.target.value.replace(/[^0-9]/g, "").slice(0, 8);
+});
+
 const safeUrl = (u) => (/^https?:\/\//i.test(u || "") ? u : "#");
 
 function daysUntil(dateStr) {
@@ -81,17 +111,7 @@ document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("cli
 // ---------------------------------------------------------------- 대시보드
 
 function renderHome() {
-  const deadlines = Object.values(state.stars)
-    .filter((n) => { const d = daysUntil(n.end); return d != null && d >= 0 && d <= 7; })
-    .sort((a, b) => a.end.localeCompare(b.end));
-  $("#homeDeadline").innerHTML = deadlines.length
-    ? deadlines.map((n) => `<li>${ddayBadge(n.end)}${kindBadge(n)}<a class="grow" href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}</a></li>`).join("")
-    : `<li class="empty">공고 탭에서 ★ 를 누르면 여기에 마감일이 표시됩니다.</li>`;
-
-  const todos = state.todos.filter((t) => !t.done).slice(0, 8);
-  $("#homeTodo").innerHTML = todos.length
-    ? todos.map((t) => `<li><input type="checkbox" data-todo="${t.id}" style="width:auto"><span class="grow">${esc(t.text)}</span>${t.due ? ddayBadge(t.due) : ""}</li>`).join("")
-    : `<li class="empty">남은 할 일이 없습니다.</li>`;
+  $("#homeTodo").innerHTML = todoListHTML();
 
   const fresh = state.notices.filter(isNew);
   const freshShown = fresh.filter((n) => n.matched && n.matched.length).concat(fresh.filter((n) => !(n.matched && n.matched.length))).slice(0, 10);
@@ -102,10 +122,7 @@ function renderHome() {
 
 }
 
-$("#homeTodo").addEventListener("change", (e) => {
-  const id = e.target.dataset.todo;
-  if (id) toggleTodo(id);
-});
+
 // ---------------------------------------------------------------- 달력
 
 function renderCalendar() {
@@ -160,7 +177,7 @@ function resetEventForm() {
   const f = $("#eventForm");
   f.reset();
   f.id.value = "";
-  f.date.value = state.cal.selected || todayStr();
+  f.date.value = compact(state.cal.selected || todayStr());
   $("#eventDelete").hidden = true;
   $("#formTitle").textContent = "일정 추가";
 }
@@ -189,6 +206,7 @@ $("#dayEvents").addEventListener("click", (e) => {
   const ev = state.events.find((x) => x.id === id);
   const f = $("#eventForm");
   for (const k of ["id", "title", "date", "time", "kind", "memo"]) f[k].value = ev[k] || "";
+  f.date.value = compact(ev.date);
   $("#eventDelete").hidden = false;
   $("#formTitle").textContent = "일정 수정";
   f.title.focus();
@@ -197,7 +215,9 @@ $("#dayEvents").addEventListener("click", (e) => {
 $("#eventForm").addEventListener("submit", (e) => {
   e.preventDefault();
   const f = e.target;
-  const data = { title: f.title.value.trim(), date: f.date.value, time: f.time.value, kind: f.kind.value, memo: f.memo.value.trim() };
+  const date = readYmd(f.date, true);
+  if (date === undefined) return;
+  const data = { title: f.title.value.trim(), date, time: f.time.value, kind: f.kind.value, memo: f.memo.value.trim() };
   if (f.id.value) Object.assign(state.events.find((x) => x.id === f.id.value), data);
   else state.events.push({ id: uid(), ...data });
   store.set("events", state.events);
@@ -350,15 +370,19 @@ $("#nList").addEventListener("click", (e) => {
 
 // ---------------------------------------------------------------- 할 일 / 메모
 
-function renderTodos() {
-  const list = state.todos.slice().sort((a, b) => a.done - b.done || (a.due || "9999").localeCompare(b.due || "9999"));
-  $("#todoList").innerHTML = list.length ? list.map((t) => `
-    <li>
-      <input type="checkbox" data-todo="${t.id}" ${t.done ? "checked" : ""} style="width:auto">
-      <span class="grow" style="${t.done ? "text-decoration:line-through;color:var(--muted)" : ""}">${esc(t.text)}</span>
-      ${t.due && !t.done ? ddayBadge(t.due) : ""}
+// 체크해도 지우지 않고 줄만 긋는다. 순서는 추가한 순서 그대로.
+function todoListHTML() {
+  return state.todos.length ? state.todos.map((t) => `
+    <li class="todo ${t.done ? "done" : ""}">
+      <input type="checkbox" data-todo="${t.id}" ${t.done ? "checked" : ""} aria-label="완료">
+      <span class="grow">${esc(t.text)}</span>
+      ${t.due ? (t.done ? `<span class="meta due">${esc(t.due.replace(/-/g, "."))}</span>` : ddayBadge(t.due)) : ""}
       <button class="icon" data-todo-del="${t.id}" title="삭제">×</button>
     </li>`).join("") : `<li class="empty">할 일이 없습니다.</li>`;
+}
+
+function renderTodos() {
+  $("#todoList").innerHTML = todoListHTML();
 }
 
 function toggleTodo(id) {
@@ -368,22 +392,29 @@ function toggleTodo(id) {
   renderAll();
 }
 
-$("#todoForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const f = e.target;
-  state.todos.push({ id: uid(), text: f.text.value.trim(), due: f.due.value, done: false });
+function addTodoFrom(form) {
+  const due = readYmd(form.due, false);
+  if (due === undefined) return;
+  state.todos.push({ id: uid(), text: form.text.value.trim(), due, done: false });
   store.set("todos", state.todos);
-  f.reset();
+  form.reset();
   renderAll();
-});
-$("#todoList").addEventListener("click", (e) => {
-  if (e.target.dataset.todo) toggleTodo(e.target.dataset.todo);
-  if (e.target.dataset.todoDel) {
-    state.todos = state.todos.filter((x) => x.id !== e.target.dataset.todoDel);
-    store.set("todos", state.todos);
-    renderAll();
-  }
-});
+  form.text.focus();
+}
+
+for (const sel of ["#todoForm", "#homeTodoForm"]) {
+  $(sel).addEventListener("submit", (e) => { e.preventDefault(); addTodoFrom(e.target); });
+}
+for (const sel of ["#todoList", "#homeTodo"]) {
+  $(sel).addEventListener("click", (e) => {
+    if (e.target.dataset.todo) toggleTodo(e.target.dataset.todo);
+    if (e.target.dataset.todoDel) {
+      state.todos = state.todos.filter((x) => x.id !== e.target.dataset.todoDel);
+      store.set("todos", state.todos);
+      renderAll();
+    }
+  });
+}
 
 let memoTimer;
 $("#memo").value = state.memo;
