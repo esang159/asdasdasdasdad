@@ -72,7 +72,7 @@ def send_text(token: str, text: str, page_url: str) -> None:
         raise RuntimeError(f"전송 실패: {res}")
 
 
-def build_message(data: dict, today: str) -> str | None:
+def build_message(data: dict, today: str, tag: str = "") -> str | None:
     """오늘 처음 들어온 공고로 메시지를 만든다. 없으면 None. 관심 키워드가 맞는 공고를 먼저."""
     if data.get("sample"):
         return None
@@ -81,7 +81,7 @@ def build_message(data: dict, today: str) -> str | None:
         return None
     fresh.sort(key=lambda n: (not n.get("matched"), n.get("end") or "9999"))
     m, d = today[5:7].lstrip("0"), today[8:10].lstrip("0")
-    head = f"[Sol Works] {m}월 {d}일 새 공고 {len(fresh)}건"
+    head = f"[Sol Works{tag}] {m}월 {d}일 새 공고 {len(fresh)}건"
     lines, used = [], len(head)
     for n in fresh[:MAX_ITEMS]:
         kind = "연구" if n.get("kind") == "연구과제" else "지원"
@@ -107,7 +107,10 @@ def main() -> int:
     today = datetime.now(KST).date().isoformat()
 
     if "--test" in sys.argv:
-        text = f"[Sol Works] 카카오톡 알림 연결 테스트예요. ({today})\n매일 아침 새 공고가 있으면 이렇게 알려드릴게요."
+        # 실제 아침 알림과 같은 모양으로, 지금 접수 중인 공고로 만들어 보낸다
+        data = json.loads(NOTICES.read_text(encoding="utf-8")) if NOTICES.exists() else {}
+        sample = [dict(n, first_seen=today) for n in data.get("items", []) if (n.get("end") or "9999") >= today]
+        text = build_message({"items": sample}, today, tag=" · 테스트") or f"[Sol Works] 카카오톡 알림 테스트예요. ({today})"
     else:
         data = json.loads(NOTICES.read_text(encoding="utf-8")) if NOTICES.exists() else {}
         text = build_message(data, today)
