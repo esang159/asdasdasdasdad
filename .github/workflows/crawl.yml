@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 22 * * *"   # 매일 07:00 KST
   workflow_dispatch:        # Actions 탭에서 수동 실행
+    inputs:
+      kakao_test:
+        description: "카카오톡 테스트 메시지 보내기"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -28,3 +33,10 @@ jobs:
           git add data/notices.json data/weather.json 2>/dev/null || git add data/notices.json
           git diff --cached --quiet || git commit -m "data: 사업공고 갱신 $(TZ=Asia/Seoul date +%F)"
           git push
+      - name: 카카오톡 알림
+        continue-on-error: true   # 알림이 실패해도 수집 결과는 그대로 둔다
+        env:
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+        run: python crawler/notify_kakao.py ${{ inputs.kakao_test && '--test' || '' }}
