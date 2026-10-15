@@ -13,15 +13,28 @@
 | 메모 | 포스트잇처럼 여러 장 쓰는 메모 (색 선택, 자동 저장, 검색) |
 | 백업 | 데이터 내보내기/가져오기 |
 
-## 구조
+## 폴더 구조
 
 ```
-index.html / style.css / app.js   화면 (빌드 없음)
-data/notices.json                 수집된 공고 (지금은 샘플 데이터)
-crawler/crawl.py                  공고 수집기 (파이썬 표준 라이브러리만 사용)
-crawler/config.json               관심 키워드, 제외 키워드, 수집처 설정
-.github/workflows/crawl.yml       매일 07:00 KST에 수집하고 커밋
-tests/                            수집기 단위 테스트
+index.html          첫 화면 (로그인 → 서비스 선택 → 대시보드). GitHub Pages가 여기서 시작
+CNAME               사이트 주소 www.solworks.store
+favicon.ico         브라우저 탭 아이콘 (브라우저가 맨 위 폴더에서 찾음)
+
+css/style.css       대시보드 화면 꾸밈
+js/app.js           대시보드 기능 (일정·할 일·업무·공고·메모·날씨·검색창)
+js/sync.js          로그인과 Firebase 동기화
+
+assets/fonts/       마루 부리 웹폰트
+assets/favicon/     탭·홈 화면 아이콘, site.webmanifest
+assets/brand/       로고 이미지, 앱 아이콘 후보(app-icons/)
+
+travel/             여행 플랫폼 (여행노트 트립플래너)
+
+data/               매일 수집된 공고(notices.json)·날씨(weather.json). 자동 커밋됨
+crawler/            공고 수집기(crawl.py), 카톡 알림(notify_kakao.py), 설정(config.json)
+crawler/tests/      수집기·알림 테스트
+firebase/           Firestore 보안 규칙
+.github/workflows/  매일 08:47 KST 수집·카톡 알림
 ```
 
 ## 설정 방법
@@ -50,15 +63,15 @@ python3 -m http.server 8000
 ## 알아둘 점
 
 - 로그인하지 않으면 일정·할 일·업무·메모·관심공고는 **이 브라우저에만** 저장됩니다.
-- 오른쪽 위 **로그인**(아이디·비밀번호)을 하면 Firebase(무료 요금제) Firestore에 저장되고 다른 기기와 실시간으로 맞춰집니다 (`sync.js`). 보안 규칙은 `firestore.rules`: 본인 계정 칸만 읽고 쓸 수 있습니다.
+- 오른쪽 위 **로그인**(아이디·비밀번호)을 하면 Firebase(무료 요금제) Firestore에 저장되고 다른 기기와 실시간으로 맞춰집니다 (`js/sync.js`). 보안 규칙은 `firebase/firestore.rules`: 본인 계정 칸만 읽고 쓸 수 있습니다.
 - 저장소가 공개 상태이면 수집된 공고 목록도 공개됩니다. 개인 일정은 저장소에 올라가지 않습니다.
 
 ## 테스트
 
 ```bash
-python3 -m unittest discover -s tests
+python3 -m unittest discover -s crawler/tests
 ```
 
 ## 글꼴
 
-`fonts/MaruBuri-Regular.woff2` — NAVER 마루 부리 (Regular). 원본 TTF를 웹용 WOFF2로 변환해 넣었습니다.
+`assets/fonts/MaruBuri-Regular.woff2` — NAVER 마루 부리 (Regular). 원본 TTF를 웹용 WOFF2로 변환해 넣었습니다.

@@ -2,7 +2,7 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "crawler"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import notify_kakao as nk  # noqa: E402
 
 
