@@ -399,28 +399,59 @@ $("#nList").addEventListener("click", (e) => {
 // ---------------------------------------------------------------- 진행 중인 업무
 // 진행률은 -/+ 버튼으로 10%씩. 100% 가 되면 완료로 표시하고 목록 아래로 내린다.
 
+// 업무에 연결된 할 일이 있으면 진행률은 (완료한 할 일 / 전체) 로 자동 계산, 없으면 −/+ 로 직접 조절.
+function workTodos(w) { return state.todos.filter((t) => t.workId === w.id); }
+function workProgress(w) {
+  const ts = workTodos(w);
+  if (!ts.length) return w.progress || 0;
+  return Math.round((ts.filter((t) => t.done).length / ts.length) * 100);
+}
+const workName = (id) => state.works.find((w) => w.id === id)?.title;
+
 function renderWorks() {
   const list = state.works.slice().sort((a, b) =>
-    (a.progress >= 100) - (b.progress >= 100) || (a.due || "9999").localeCompare(b.due || "9999"));
-  const active = state.works.filter((w) => w.progress < 100).length;
+    (workProgress(a) >= 100) - (workProgress(b) >= 100) || (a.due || "9999").localeCompare(b.due || "9999"));
+  const active = state.works.filter((w) => workProgress(w) < 100).length;
   $("#workCount").textContent = state.works.length ? `(${active}건 진행 중)` : "";
   $("#workList").innerHTML = list.length ? list.map((w) => {
-    const done = w.progress >= 100;
+    const pr = workProgress(w), done = pr >= 100, ts = workTodos(w), auto = ts.length > 0;
     return `
     <li class="work ${done ? "done" : ""}">
       <div class="work-top">
         <span class="grow">${esc(w.title)}</span>
         ${w.due ? (done ? `<span class="meta due">${esc(w.due.replace(/-/g, "."))}</span>` : ddayBadge(w.due)) : ""}
-        <button class="icon" data-work-del="${w.id}" title="삭제">×</button>
+        <button class="icon" data-work-del="${w.id}" title="업무 삭제">×</button>
       </div>
       <div class="work-bar">
-        <div class="bar" role="progressbar" aria-valuenow="${w.progress}" aria-valuemin="0" aria-valuemax="100"><i style="width:${w.progress}%"></i></div>
-        <span class="pct">${done ? "완료" : w.progress + "%"}</span>
-        <button class="step" data-work-step="-10" data-id="${w.id}" aria-label="진행률 낮추기" ${w.progress <= 0 ? "disabled" : ""}>−</button>
-        <button class="step" data-work-step="10" data-id="${w.id}" aria-label="진행률 올리기" ${done ? "disabled" : ""}>+</button>
+        <div class="bar" role="progressbar" aria-valuenow="${pr}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pr}%"></i></div>
+        <span class="pct">${done ? "완료" : pr + "%"}</span>
+        ${auto
+          ? `<span class="work-count">할 일 ${ts.filter((t) => t.done).length}/${ts.length}</span>`
+          : `<button class="step" data-work-step="-10" data-id="${w.id}" aria-label="진행률 낮추기" ${pr <= 0 ? "disabled" : ""}>−</button>
+             <button class="step" data-work-step="10" data-id="${w.id}" aria-label="진행률 올리기" ${done ? "disabled" : ""}>+</button>`}
       </div>
+      <ul class="work-todos">
+        ${ts.map((t) => `
+          <li class="todo ${t.done ? "done" : ""}">
+            <input type="checkbox" data-todo="${t.id}" ${t.done ? "checked" : ""} aria-label="완료">
+            <span class="grow">${esc(t.text)}</span>
+            ${t.due && !t.done ? ddayBadge(t.due) : ""}
+          </li>`).join("")}
+      </ul>
+      <form class="work-todo-form" data-work="${w.id}">
+        <input name="text" placeholder="+ 이 업무에 할 일 추가" aria-label="${esc(w.title)}에 할 일 추가" required>
+      </form>
     </li>`;
   }).join("") : `<li class="empty">진행 중인 업무를 추가해 보세요.</li>`;
+
+  // 할 일 입력칸의 업무 선택 목록도 맞춘다 (고른 값은 유지)
+  const opts = `<option value="">업무 없음</option>` +
+    state.works.filter((w) => workProgress(w) < 100).map((w) => `<option value="${w.id}">${esc(w.title)}</option>`).join("");
+  document.querySelectorAll(".work-select").forEach((sel) => {
+    const v = sel.value;
+    sel.innerHTML = opts;
+    sel.value = state.works.some((w) => w.id === v) ? v : "";
+  });
 }
 
 $("#workForm").addEventListener("submit", (e) => {
@@ -438,13 +469,30 @@ $("#workList").addEventListener("click", (e) => {
   const b = e.target.closest("button");
   if (!b) return;
   if (b.dataset.workDel) {
-    state.works = state.works.filter((w) => w.id !== b.dataset.workDel);
+    const id = b.dataset.workDel;
+    state.works = state.works.filter((w) => w.id !== id);
+    // 업무를 지워도 할 일은 남기고 연결만 끊는다
+    for (const t of state.todos) if (t.workId === id) delete t.workId;
+    store.set("todos", state.todos);
   } else if (b.dataset.workStep) {
     const w = state.works.find((x) => x.id === b.dataset.id);
     if (w) w.progress = Math.max(0, Math.min(100, w.progress + Number(b.dataset.workStep)));
   } else return;
   store.set("works", state.works);
-  renderWorks();
+  renderAll();
+});
+$("#workList").addEventListener("change", (e) => {
+  if (e.target.dataset.todo) toggleTodo(e.target.dataset.todo);
+});
+$("#workList").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const f = e.target.closest(".work-todo-form");
+  const text = f.text.value.trim();
+  if (!text) return;
+  state.todos.push({ id: uid(), text, due: "", done: false, workId: f.dataset.work });
+  store.set("todos", state.todos);
+  renderAll();
+  $(`.work-todo-form[data-work="${f.dataset.work}"] input`)?.focus();
 });
 
 // ---------------------------------------------------------------- 할 일 / 메모
@@ -455,6 +503,7 @@ function todoListHTML() {
     <li class="todo ${t.done ? "done" : ""}">
       <input type="checkbox" data-todo="${t.id}" ${t.done ? "checked" : ""} aria-label="완료">
       <span class="grow">${esc(t.text)}</span>
+      ${t.workId && workName(t.workId) ? `<span class="work-chip" title="연결된 업무">${esc(workName(t.workId))}</span>` : ""}
       ${t.due ? (t.done ? `<span class="meta due">${esc(t.due.replace(/-/g, "."))}</span>` : ddayBadge(t.due)) : ""}
       <button class="icon" data-todo-del="${t.id}" title="삭제">×</button>
     </li>`).join("") : `<li class="empty">할 일이 없습니다.</li>`;
@@ -474,9 +523,10 @@ function toggleTodo(id) {
 function addTodoFrom(form) {
   const due = readYmd(form.due, false);
   if (due === undefined) return;
-  state.todos.push({ id: uid(), text: form.text.value.trim(), due, done: false });
+  const workId = form.work?.value || "";
+  state.todos.push({ id: uid(), text: form.text.value.trim(), due, done: false, ...(workId ? { workId } : {}) });
   store.set("todos", state.todos);
-  form.reset();
+  form.text.value = ""; form.due.value = "";   // 고른 업무는 이어서 쓰도록 남겨 둔다
   renderAll();
   form.text.focus();
 }
@@ -520,12 +570,12 @@ function pageContext() {
     .filter((e) => { const d = daysUntil(e.date); return d != null && d >= -1 && d <= 30; })
     .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")))
     .map((e) => `- ${e.date} ${e.time || "종일"} [${KINDS[e.kind]}] ${e.title}`);
-  const todos = state.todos.filter((t) => !t.done).map((t) => `- ${t.text}${t.due ? " (기한 " + t.due + ")" : ""}`);
+  const todos = state.todos.filter((t) => !t.done).map((t) => `- ${t.text}${t.due ? " (기한 " + t.due + ")" : ""}${t.workId && workName(t.workId) ? " [업무: " + workName(t.workId) + "]" : ""}`);
   const notices = state.notices
     .filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; })
     .slice(0, 60)
     .map((n) => `- [${n.id}] ${n.title} | ${n.org || ""} | ${n.kind || "지원사업"} | 지역 ${(n.regions || []).join(",") || "전국"} | 대상 ${n.target || "-"} | 접수 ${n.start || "?"}~${n.end || "?"}${state.stars[n.id] ? " | ★관심" : ""}`);
-  const works = state.works.filter((w) => w.progress < 100).map((w) => `- ${w.title} (진행률 ${w.progress}%${w.due ? ", 마감 " + w.due : ""})`);
+  const works = state.works.filter((w) => workProgress(w) < 100).map((w) => `- ${w.title} (진행률 ${workProgress(w)}%${w.due ? ", 마감 " + w.due : ""})`);
   return `오늘: ${today} (${new Date().toLocaleDateString("ko-KR", { weekday: "long" })})
 
 [앞으로 30일 일정]
@@ -575,12 +625,13 @@ const ASK_TOOLS = [
     description: "할 일 목록에 항목을 추가한다. due는 YYYY-MM-DD 또는 빈 문자열.",
     inputSchema: {
       type: "object",
-      properties: { text: { type: "string" }, due: { type: "string" } },
+      properties: { text: { type: "string" }, due: { type: "string" }, work: { type: "string", description: "연결할 진행 중인 업무 이름 (선택)" } },
       required: ["text"],
     },
     execute(input) {
       const due = /^\d{4}-\d{2}-\d{2}$/.test(String(input.due || "")) ? String(input.due) : "";
-      const t = { id: uid(), text: String(input.text).slice(0, 200), due, done: false };
+      const w = input.work ? state.works.find((x) => x.title.includes(String(input.work)) || String(input.work).includes(x.title)) : null;
+      const t = { id: uid(), text: String(input.text).slice(0, 200), due, done: false, ...(w ? { workId: w.id } : {}) };
       state.todos.push(t);
       store.set("todos", state.todos);
       renderAll();

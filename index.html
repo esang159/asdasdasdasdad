@@ -41,6 +41,7 @@
           <form id="homeTodoForm" class="inline-form todo-form">
             <input name="text" placeholder="할 일 추가" required>
             <input name="due" class="ymd" inputmode="numeric" maxlength="10" placeholder="마감 20261015" aria-label="마감일 (예: 20261015)">
+            <select name="work" class="work-select" aria-label="연결할 업무"><option value="">업무 없음</option></select>
             <button>추가</button>
           </form>
           <ul id="homeTodo" class="list"></ul>
@@ -121,6 +122,7 @@
           <form id="todoForm" class="inline-form todo-form">
             <input name="text" placeholder="할 일을 입력하고 Enter" required>
             <input name="due" class="ymd" inputmode="numeric" maxlength="10" placeholder="마감 20261015" aria-label="마감일 (예: 20261015)">
+            <select name="work" class="work-select" aria-label="연결할 업무"><option value="">업무 없음</option></select>
             <button>추가</button>
           </form>
           <ul id="todoList" class="list"></ul>
