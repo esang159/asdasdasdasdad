@@ -1,3 +1,12 @@
+/* 마루 부리 (NAVER) — fonts/ 폴더의 웹폰트 */
+@font-face {
+  font-family: "MaruBuri";
+  src: url("fonts/MaruBuri-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #f5f6f8;
   --card: #ffffff;
@@ -48,7 +57,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Pretendard", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-family: "MaruBuri", "Apple SD Gothic Neo", "Malgun Gothic", serif;
   font-size: 14px;
   line-height: 1.5;
 }

@@ -56,3 +56,7 @@ python3 -m http.server 8000
 ```bash
 python3 -m unittest discover -s tests
 ```
+
+## 글꼴
+
+`fonts/MaruBuri-Regular.woff2` — NAVER 마루 부리 (Regular). 원본 TTF를 웹용 WOFF2로 변환해 넣었습니다.
