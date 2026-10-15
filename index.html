@@ -11,7 +11,6 @@
     <div class="brand">내 업무페이지</div>
     <nav class="tabs" role="tablist">
       <button data-tab="home" class="active">대시보드</button>
-      <button data-tab="calendar">일정</button>
       <button data-tab="notices">사업공고</button>
       <button data-tab="todo">할 일 · 메모</button>
     </nav>
@@ -21,37 +20,18 @@
   <main>
     <!-- 대시보드 -->
     <section id="tab-home" class="tab active">
-      <div class="grid3">
-        <div class="card">
-          <h2>오늘 일정</h2>
-          <ul id="homeToday" class="list"></ul>
-        </div>
-        <div class="card">
-          <h2>마감 임박 공고 <small>(관심공고 · 7일 이내)</small></h2>
-          <ul id="homeDeadline" class="list"></ul>
-        </div>
-        <div class="card">
-          <h2>할 일</h2>
-          <ul id="homeTodo" class="list"></ul>
-        </div>
+      <form id="askForm" class="ask">
+        <span class="ask-mark" aria-hidden="true">✳</span>
+        <input id="askInput" autocomplete="off" placeholder="Claude에게 물어보기 (예: 다음 주 화요일 2시 미팅 추가해줘)">
+        <button id="askBtn">물어보기</button>
+        <button type="button" id="askStop" class="ghost" hidden>중지</button>
+      </form>
+      <div id="askPanel" class="card ask-panel" hidden>
+        <div class="ask-q" id="askQ"></div>
+        <div class="ask-a" id="askA"></div>
+        <div class="ask-foot"><span class="meta" id="askNote"></span><button type="button" id="askClose" class="ghost">닫기</button></div>
       </div>
-      <div class="card">
-        <h2>새로 올라온 공고 <small id="homeNewCount"></small></h2>
-        <ul id="homeNew" class="list"></ul>
-      </div>
-      <div class="card">
-        <h2>바로가기</h2>
-        <div id="links" class="links"></div>
-        <form id="linkForm" class="inline-form">
-          <input name="name" placeholder="이름" required>
-          <input name="url" placeholder="https://" required type="url">
-          <button>추가</button>
-        </form>
-      </div>
-    </section>
 
-    <!-- 일정 -->
-    <section id="tab-calendar" class="tab">
       <div class="cal-layout">
         <div class="card">
           <div class="cal-head">
@@ -59,11 +39,17 @@
             <h2 id="calTitle"></h2>
             <button id="calNext" aria-label="다음 달">›</button>
             <button id="calToday" class="ghost">오늘</button>
+            <span class="legend">
+              <span><i class="dot k-work"></i>업무</span><span><i class="dot k-meeting"></i>회의</span>
+              <span><i class="dot k-deadline"></i>마감</span><span><i class="dot k-personal"></i>개인</span>
+            </span>
           </div>
           <div class="cal-grid" id="calGrid"></div>
         </div>
         <div class="card">
-          <h2 id="dayTitle">일정 추가</h2>
+          <h2 id="dayTitle">일정</h2>
+          <ul id="dayEvents" class="list"></ul>
+          <h3 id="formTitle">일정 추가</h3>
           <form id="eventForm" class="stack">
             <input type="hidden" name="id">
             <label>제목 <input name="title" required></label>
@@ -79,15 +65,28 @@
                 <option value="personal">개인</option>
               </select>
             </label>
-            <label>메모 <textarea name="memo" rows="3"></textarea></label>
+            <label>메모 <textarea name="memo" rows="2"></textarea></label>
             <div class="row">
               <button type="submit">저장</button>
               <button type="button" id="eventDelete" class="danger" hidden>삭제</button>
               <button type="button" id="eventReset" class="ghost">새로 쓰기</button>
             </div>
           </form>
-          <h3>이 날의 일정</h3>
-          <ul id="dayEvents" class="list"></ul>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="card">
+          <h2>할 일</h2>
+          <ul id="homeTodo" class="list"></ul>
+        </div>
+        <div class="card">
+          <h2>마감 임박 공고 <small>(관심공고 · 7일 이내)</small></h2>
+          <ul id="homeDeadline" class="list"></ul>
+        </div>
+        <div class="card">
+          <h2>새로 올라온 공고 <small id="homeNewCount"></small></h2>
+          <ul id="homeNew" class="list"></ul>
         </div>
       </div>
     </section>

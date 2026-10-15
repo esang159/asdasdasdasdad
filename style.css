@@ -11,6 +11,7 @@
   --c-meeting: #8b5cf6;
   --c-deadline: #e5533d;
   --c-personal: #16a34a;
+  --claude: #d97757;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -104,12 +105,6 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
   padding: 7px 14px; cursor: pointer; color: var(--muted);
 }
 
-.links { display: flex; gap: 8px; flex-wrap: wrap; }
-.links .chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 12px;
-}
-
 .badge {
   display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px;
   background: var(--accent-soft); color: var(--accent); white-space: nowrap;
@@ -124,11 +119,32 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .k-deadline { background: var(--c-deadline); }
 .k-personal { background: var(--c-personal); }
 
+/* Claude 검색창 */
+.ask {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+  background: var(--card); border: 1.5px solid var(--accent); border-radius: 14px;
+  padding: 6px 6px 6px 14px;
+}
+.ask:focus-within { box-shadow: 0 0 0 4px var(--accent-soft); }
+.ask-mark { color: var(--claude); font-size: 18px; line-height: 1; }
+.ask input { border: 0; padding: 8px 4px; font-size: 15px; background: transparent; min-width: 0; }
+.ask input:focus { outline: none; }
+.ask-panel { border-color: var(--accent); }
+.ask-q { font-weight: 600; margin-bottom: 8px; }
+.ask-a { white-space: pre-wrap; line-height: 1.65; }
+.ask-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.ask-foot .meta { margin: 0; }
+@media (max-width: 600px) { #askBtn { padding: 7px 10px; } }
+
 /* 달력 */
-.cal-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.cal-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+.cal-layout .card { margin-bottom: 0; }
 @media (max-width: 860px) { .cal-layout { grid-template-columns: 1fr; } }
 .cal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .cal-head h2 { margin: 0; min-width: 120px; text-align: center; }
+.legend { margin-left: auto; display: flex; gap: 10px; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+@media (max-width: 600px) { .legend { display: none; } }
 .cal-head button:not(.ghost) { background: none; color: var(--text); font-size: 20px; padding: 0 10px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .cal-grid .dow { background: var(--card); text-align: center; padding: 6px 0; font-size: 12px; color: var(--muted); }
@@ -171,3 +187,4 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .notice .actions button { font-size: 12px; padding: 4px 10px; }
 .star { background: none; color: var(--muted); font-size: 18px; padding: 0 4px; }
 .star.on { color: #f5b301; }
+#homeTodo .grow, #todoList .grow { white-space: normal; }

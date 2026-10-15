@@ -2,6 +2,16 @@
 // 개인 데이터는 브라우저 localStorage 에 저장되고, 공고는 data/notices.json 에서 읽는다.
 
 const KINDS = { work: "업무", meeting: "회의", deadline: "마감", personal: "개인" };
+// 처음 열었을 때 할 일 목록에 넣어두는 설정 작업
+const SETUP_TODOS = [
+  "[설정] claude.ai에서 GitHub 다시 연결 (Claude가 저장소에 올릴 수 있게)",
+  "[설정] 기업마당 API 인증키 발급 (bizinfo.go.kr → 정책정보 개방)",
+  "[설정] 공공데이터포털에서 K-Startup 사업공고 조회서비스 활용신청",
+  "[설정] GitHub 저장소 Secrets에 BIZINFO_API_KEY, DATA_GO_KR_KEY 등록",
+  "[설정] GitHub Actions에서 '사업공고 수집' 한 번 수동 실행",
+  "[설정] GitHub Pages 켜기 (Settings → Pages)",
+  "[설정] 관심 업종·지역·키워드를 Claude에게 알려주기",
+];
 const KIND_COLOR = { work: "var(--c-work)", meeting: "var(--c-meeting)", deadline: "var(--c-deadline)", personal: "var(--c-personal)" };
 
 // ---------------------------------------------------------------- 저장소
@@ -20,12 +30,7 @@ const store = {
 
 const state = {
   events: store.get("events", []),
-  todos: store.get("todos", []),
-  links: store.get("links", [
-    { name: "기업마당", url: "https://www.bizinfo.go.kr" },
-    { name: "K-Startup", url: "https://www.k-startup.go.kr" },
-    { name: "나라장터", url: "https://www.g2b.go.kr" },
-  ]),
+  todos: store.get("todos", null) ?? SETUP_TODOS.map((text, i) => ({ id: "setup" + i, text, due: "", done: false })),
   stars: store.get("stars", {}),     // 공고 id -> 공고 사본 (목록에서 빠져도 유지)
   memo: store.get("memo", ""),
   notices: [],
@@ -76,12 +81,6 @@ document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("cli
 // ---------------------------------------------------------------- 대시보드
 
 function renderHome() {
-  const today = todayStr();
-  const evs = state.events.filter((e) => e.date === today).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
-  $("#homeToday").innerHTML = evs.length
-    ? evs.map((e) => `<li><span class="dot k-${e.kind}"></span><span>${esc(e.time || "종일")}</span><span class="grow">${esc(e.title)}</span></li>`).join("")
-    : `<li class="empty">오늘 일정이 없습니다.</li>`;
-
   const deadlines = Object.values(state.stars)
     .filter((n) => { const d = daysUntil(n.end); return d != null && d >= 0 && d <= 7; })
     .sort((a, b) => a.end.localeCompare(b.end));
@@ -101,30 +100,12 @@ function renderHome() {
     ? freshShown.map((n) => `<li><span class="badge">${esc(n.source)}</span>${(n.matched || []).map((k) => `<span class="badge new">${esc(k)}</span>`).join("")}<a class="grow" href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}</a>${ddayBadge(n.end)}</li>`).join("")
     : `<li class="empty">최근 3일 동안 새 공고가 없습니다.</li>`;
 
-  $("#links").innerHTML = state.links.map((l, i) =>
-    `<span class="chip"><a href="${esc(safeUrl(l.url))}" target="_blank" rel="noopener">${esc(l.name)}</a><button class="icon" data-link-del="${i}" title="삭제">×</button></span>`).join("");
 }
 
 $("#homeTodo").addEventListener("change", (e) => {
   const id = e.target.dataset.todo;
   if (id) toggleTodo(id);
 });
-$("#links").addEventListener("click", (e) => {
-  const i = e.target.dataset.linkDel;
-  if (i == null) return;
-  state.links.splice(Number(i), 1);
-  store.set("links", state.links);
-  renderHome();
-});
-$("#linkForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const f = e.target;
-  state.links.push({ name: f.name.value.trim(), url: f.url.value.trim() });
-  store.set("links", state.links);
-  f.reset();
-  renderHome();
-});
-
 // ---------------------------------------------------------------- 달력
 
 function renderCalendar() {
@@ -157,7 +138,9 @@ function renderCalendar() {
 
 function renderDay() {
   const ds = state.cal.selected;
-  $("#dayTitle").textContent = ds ? `${ds} 일정` : "일정 추가";
+  const [y, m, d] = ds.split("-").map(Number);
+  const label = new Date(y, m - 1, d).toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" });
+  $("#dayTitle").textContent = (ds === todayStr() ? "오늘 · " : "") + label;
   const evs = state.events.filter((e) => e.date === ds).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
   const added = new Set(state.events.map((e) => e.noticeId).filter(Boolean));
   const deadlines = Object.values(state.stars).filter((n) => n.end === ds && !added.has(n.id));
@@ -179,6 +162,7 @@ function resetEventForm() {
   f.id.value = "";
   f.date.value = state.cal.selected || todayStr();
   $("#eventDelete").hidden = true;
+  $("#formTitle").textContent = "일정 추가";
 }
 
 $("#calGrid").addEventListener("click", (e) => {
@@ -206,6 +190,7 @@ $("#dayEvents").addEventListener("click", (e) => {
   const f = $("#eventForm");
   for (const k of ["id", "title", "date", "time", "kind", "memo"]) f[k].value = ev[k] || "";
   $("#eventDelete").hidden = false;
+  $("#formTitle").textContent = "일정 수정";
   f.title.focus();
 });
 
@@ -370,10 +355,164 @@ $("#memo").addEventListener("input", (e) => {
   }, 400);
 });
 
+// ---------------------------------------------------------------- Claude 검색창
+// claude.ai 아티팩트로 열면 페이지 안에서 바로 답하고 일정·할 일도 추가한다.
+// 그 밖의 곳(GitHub Pages 등)에서는 질문을 담아 claude.ai 새 대화를 연다.
+
+let sampleFn = null;
+let askCtl = null;
+if (window.claude?.use) window.claude.use("sample").then((fn) => { sampleFn = fn; }).catch(() => {});
+
+function pageContext() {
+  const today = todayStr();
+  const soon = state.events
+    .filter((e) => { const d = daysUntil(e.date); return d != null && d >= -1 && d <= 30; })
+    .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")))
+    .map((e) => `- ${e.date} ${e.time || "종일"} [${KINDS[e.kind]}] ${e.title}`);
+  const todos = state.todos.filter((t) => !t.done).map((t) => `- ${t.text}${t.due ? " (기한 " + t.due + ")" : ""}`);
+  const notices = state.notices
+    .filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; })
+    .slice(0, 60)
+    .map((n) => `- [${n.id}] ${n.title} | ${n.org || ""} | 접수 ${n.start || "?"}~${n.end || "?"}${state.stars[n.id] ? " | ★관심" : ""}`);
+  return `오늘: ${today} (${new Date().toLocaleDateString("ko-KR", { weekday: "long" })})
+
+[앞으로 30일 일정]
+${soon.join("\n") || "(없음)"}
+
+[남은 할 일]
+${todos.join("\n") || "(없음)"}
+
+[접수중인 사업공고]
+${notices.join("\n") || "(없음)"}`;
+}
+
+const ASK_TOOLS = [
+  {
+    name: "add_event",
+    description: "사용자 달력에 일정을 추가한다. 날짜는 YYYY-MM-DD, 시간은 HH:MM(24시간, 없으면 빈 문자열). 추가된 일정을 돌려준다.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        date: { type: "string" },
+        time: { type: "string" },
+        kind: { type: "string", enum: ["work", "meeting", "deadline", "personal"] },
+        memo: { type: "string" },
+      },
+      required: ["title", "date"],
+    },
+    execute(input) {
+      const date = String(input.date || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("date는 YYYY-MM-DD 형식이어야 합니다");
+      const time = /^\d{2}:\d{2}$/.test(String(input.time || "")) ? String(input.time) : "";
+      const kind = KINDS[input.kind] ? String(input.kind) : "work";
+      const ev = { id: uid(), title: String(input.title).slice(0, 200), date, time, kind, memo: String(input.memo || "") };
+      state.events.push(ev);
+      store.set("events", state.events);
+      const [y, m] = date.split("-").map(Number);
+      state.cal = { year: y, month: m - 1, selected: date };
+      renderAll();
+      return ev;
+    },
+  },
+  {
+    name: "add_todo",
+    description: "할 일 목록에 항목을 추가한다. due는 YYYY-MM-DD 또는 빈 문자열.",
+    inputSchema: {
+      type: "object",
+      properties: { text: { type: "string" }, due: { type: "string" } },
+      required: ["text"],
+    },
+    execute(input) {
+      const due = /^\d{4}-\d{2}-\d{2}$/.test(String(input.due || "")) ? String(input.due) : "";
+      const t = { id: uid(), text: String(input.text).slice(0, 200), due, done: false };
+      state.todos.push(t);
+      store.set("todos", state.todos);
+      renderAll();
+      return t;
+    },
+  },
+  {
+    name: "star_notice",
+    description: "사업공고를 관심공고(★)로 표시한다. 공고 목록의 대괄호 안 id를 넘긴다. 관심공고 마감일은 달력에 표시된다.",
+    inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+    execute(input) {
+      const n = state.notices.find((x) => x.id === String(input.id));
+      if (!n) throw new Error("그런 id의 공고가 없습니다");
+      state.stars[n.id] = n;
+      store.set("stars", state.stars);
+      renderAll();
+      return { ok: true, title: n.title };
+    },
+  },
+];
+
+const ASK_ERRORS = {
+  not_granted: "Claude 사용을 허용하지 않아 답할 수 없습니다.",
+  sampling_disabled: "이 계정에서는 Claude를 쓸 수 없습니다.",
+  rate_limited: "요청이 많습니다. 잠시 후 다시 물어봐 주세요.",
+  session_expired: "claude.ai에 다시 로그인해 주세요.",
+  refused: "이 질문에는 답할 수 없습니다. 다르게 물어봐 주세요.",
+  prompt_too_large: "보낼 내용이 너무 깁니다.",
+};
+
+async function ask(question) {
+  if (!sampleFn) {
+    const q = `${question}\n\n(참고: 오늘은 ${todayStr()}입니다)`;
+    window.open("https://claude.ai/new?q=" + encodeURIComponent(q), "_blank", "noopener");
+    return;
+  }
+  const panel = $("#askPanel"), out = $("#askA"), note = $("#askNote");
+  panel.hidden = false;
+  $("#askQ").textContent = question;
+  out.textContent = "생각하는 중…";
+  note.textContent = "";
+  $("#askBtn").disabled = true;
+  $("#askStop").hidden = false;
+  askCtl = new AbortController();
+  const canUseTools = !!(await sampleFn.limits().catch(() => null))?.tools;
+  const prompt = `너는 사용자의 개인 업무페이지에 있는 비서야. 아래 페이지 데이터를 보고 한국어로 짧고 바로 쓸 수 있게 답해.
+일정이나 할 일을 추가해 달라고 하면 도구를 써서 실제로 추가하고, 무엇을 추가했는지 한 줄로 알려줘.
+"다음 주 화요일" 같은 상대 날짜는 오늘 날짜를 기준으로 계산해. 마크다운 표나 제목은 쓰지 말고 평문과 짧은 목록만 써.
+
+${pageContext()}
+
+[질문]
+${question}`;
+  try {
+    const { truncated } = await sampleFn(prompt, {
+      signal: askCtl.signal,
+      modelTier: "quick",
+      ...(canUseTools ? { tools: ASK_TOOLS } : {}),
+      onText: ({ text }) => { out.textContent = text; },
+    });
+    if (truncated) note.textContent = "답이 길어 중간에 끊겼습니다.";
+  } catch (e) {
+    out.textContent = e?.text ?? "";
+    if (e?.code !== "cancelled") {
+      note.textContent = ASK_ERRORS[e?.code] || "답을 받지 못했습니다. 다시 시도해 주세요.";
+    }
+    if (e?.code === "not_granted" || e?.code === "sampling_disabled") sampleFn = null;
+  } finally {
+    $("#askBtn").disabled = false;
+    $("#askStop").hidden = true;
+  }
+}
+
+$("#askForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const q = $("#askInput").value.trim();
+  if (!q) return;
+  $("#askInput").value = "";
+  ask(q);
+});
+$("#askStop").addEventListener("click", () => askCtl?.abort());
+$("#askClose").addEventListener("click", () => { askCtl?.abort(); $("#askPanel").hidden = true; });
+
 // ---------------------------------------------------------------- 백업
 
 $("#exportBtn").addEventListener("click", () => {
-  const data = { events: state.events, todos: state.todos, links: state.links, stars: state.stars, memo: state.memo };
+  const data = { events: state.events, todos: state.todos, stars: state.stars, memo: state.memo };
   const blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -387,7 +526,7 @@ $("#importFile").addEventListener("change", async (e) => {
   try {
     const data = JSON.parse(await file.text());
     if (!confirm("현재 데이터를 백업 파일 내용으로 바꿀까요?")) return;
-    for (const k of ["events", "todos", "links", "stars", "memo"]) {
+    for (const k of ["events", "todos", "stars", "memo"]) {
       if (data[k] !== undefined) { state[k] = data[k]; store.set(k, data[k]); }
     }
     $("#memo").value = state.memo;
