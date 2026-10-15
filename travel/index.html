@@ -902,6 +902,30 @@
 
   dialog{border:1px solid var(--line); border-radius:14px; background:#fff; color:var(--ink); padding:0; max-width:392px; width:calc(100% - 32px); box-shadow:0 30px 70px -28px rgba(0,0,0,.5)}
   dialog::backdrop{background:rgba(12,20,16,.45)}
+  /* 실제 지도 (OpenStreetMap) — 확대해서 어디서 타고 내리는지 본다 */
+  dialog.rmdlg{max-width:1000px; width:calc(100% - 24px); height:min(86vh,820px); display:none; flex-direction:column; overflow:hidden}
+  dialog.rmdlg[open]{display:flex}
+  .rm-head{display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--line)}
+  .rm-head h3{font-size:15px; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .rm-head button{border:1px solid var(--line-2); border-radius:8px; padding:6px 12px; font-size:13px; font-weight:600; background:#fff}
+  .rm-head button:hover{border-color:var(--brand); color:var(--brand)}
+  .rm-note{padding:7px 14px; font-size:12px; color:var(--ink-3); background:var(--card-2); border-bottom:1px solid var(--line)}
+  .rm-note b{color:var(--ink-2)}
+  .rm-canvas{flex:1; min-height:0; background:var(--sea)}
+  .rm-pin{display:grid; place-items:center; width:26px; height:26px; border-radius:50% 50% 50% 0; transform:rotate(-45deg);
+    color:#fff; font:700 11px/1 "IBM Plex Mono",monospace; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,.35)}
+  .rm-pin span{transform:rotate(45deg)}
+  .rm-stop{display:inline-flex; align-items:center; gap:4px; white-space:nowrap; transform:translate(-50%,-50%);
+    background:#fff; border:2px solid var(--c-move); color:var(--ink); border-radius:999px; padding:2px 8px 2px 3px;
+    font:600 11.5px/1.4 "IBM Plex Sans KR",sans-serif; box-shadow:0 2px 6px rgba(0,0,0,.25)}
+  .rm-stop i{font-style:normal; color:#fff; background:var(--c-move); border-radius:999px; padding:1px 6px; font-size:10.5px}
+  .rm-stop.off{border-color:var(--c-food)}
+  .rm-stop.off i{background:var(--c-food)}
+  .rm-dot{width:9px; height:9px; border-radius:50%; background:#fff; border:2px solid var(--c-move); transform:translate(-50%,-50%)}
+  .rmopen{margin-left:8px; border:1px solid var(--line-2); border-radius:7px; padding:4px 10px; font-size:12px; font-weight:600; color:var(--ink-2); background:#fff}
+  .rmopen:hover{border-color:var(--brand); color:var(--brand)}
+  .hoplinks .hopmap{color:var(--ink-2); font-weight:600; border:1px solid var(--line-2); border-radius:5px; padding:2px 7px; background:#fff; font-size:10.5px}
+  .hoplinks .hopmap:hover{border-color:var(--brand); color:var(--brand)}
   .dlg{padding:20px; max-height:86vh; overflow-y:auto}
   .dlg h3{font-size:17px; margin-bottom:4px}
   .dlg > p{font-size:12.5px; color:var(--ink-3); margin-bottom:14px}
@@ -1130,7 +1154,7 @@
   <div class="split">
     <aside class="rail sticky">
       <section class="card" style="overflow:hidden">
-        <div class="maphead"><h3>지도</h3><span class="src trip-route">–</span></div>
+        <div class="maphead"><h3>지도</h3><span class="src trip-route">–</span><button type="button" class="rmopen" id="rm-open-trip">실제 지도로 크게 보기</button></div>
         <p class="mapsrc">행정경계 통계청 · 하천/시가지 Natural Earth</p>
         <div class="mapbox tall" id="map-cart"></div>
         <div class="mapfoot">
@@ -1365,6 +1389,12 @@
       <button type="button" class="go" id="pay-go">카카오페이로 결제</button>
     </div>
   </div>
+</dialog>
+
+<dialog id="realmap" class="rmdlg" aria-labelledby="rm-title">
+  <div class="rm-head"><h3 id="rm-title">지도</h3><button type="button" id="rm-close">닫기</button></div>
+  <p class="rm-note" id="rm-note"></p>
+  <div class="rm-canvas" id="rm-canvas"></div>
 </dialog>
 
 <script>
@@ -2566,7 +2596,11 @@ function readTransit(j){
       kind: sp.trafficType===1 ? 'subway' : 'bus',
       no: lane.busNo || lane.name || '',
       start: sp.startName, end: sp.endName,
-      stops: sp.stationCount, min: sp.sectionTime
+      stops: sp.stationCount, min: sp.sectionTime,
+      /* 지도에 타는 곳·내리는 곳·지나는 정류장을 찍기 위한 좌표 */
+      sx: +sp.startX || null, sy: +sp.startY || null, ex: +sp.endX || null, ey: +sp.endY || null,
+      path: ((sp.passStopList||{}).stations||[]).map(function(st){ return [+st.y, +st.x]; })
+              .filter(function(c){ return c[0] && c[1]; })
     });
   });
   if(!steps.filter(function(x){ return x.kind!=='walk'; }).length) return null;
@@ -4342,6 +4376,7 @@ function hopBar(hp){
   function withLinks(inner){
     return '<div class="hoptop">'+head(inner)+'</div>'+
       '<div class="hoplinks">실제 노선 보기'+
+        '<button type="button" class="hopmap">지도</button>'+
         '<a href="'+L.google+'" target="_blank" rel="noopener">구글</a>'+
         '<a href="'+L.naver+'" target="_blank" rel="noopener">네이버</a>'+
         '<a href="'+L.kakao+'" target="_blank" rel="noopener">카카오</a>'+
@@ -4367,6 +4402,9 @@ function hopBar(hp){
     var links = bar.querySelector('.hoplinks');
     links.insertBefore(b, links.firstChild);
   }
+  bar.addEventListener('click', function(e){
+    if(e.target.closest('.hopmap')) openHopMap(hp);
+  });
   function paint(res){
     /* 캐시에 있으면 이 콜백이 바로 돌아온다. 아직 화면에 붙기 전이어도 그려 둔다 */
     if(res.state==='idle'){
@@ -4382,6 +4420,7 @@ function hopBar(hp){
       bar.innerHTML = '<div class="hoptop">'+head('<small class="hreal">실제 노선</small>')+'</div>'
                     + hopSteps(res.data)
                     + '<div class="hoplinks">지도에서 보기'
+                    + '<button type="button" class="hopmap">크게 보기</button>'
                     + '<a href="'+L.google+'" target="_blank" rel="noopener">구글</a>'
                     + '<a href="'+L.naver+'" target="_blank" rel="noopener">네이버</a>'
                     + '<a href="'+L.kakao+'" target="_blank" rel="noopener">카카오</a></div>';
@@ -4395,6 +4434,116 @@ function hopBar(hp){
   fetchTransit(hp, paint);
   return bar;
 }
+
+/* ═══ 실제 지도 (Leaflet + OpenStreetMap, 키 필요 없음) ═══
+   그림 지도는 전국 단위라 확대해도 길·정류장이 안 보인다.
+   여기서는 실제 지도를 띄워 확대·이동하며 어디서 타고 내리는지 본다. */
+var LEAFLET = null;
+function loadLeaflet(done){
+  if(window.L) return done(window.L);
+  if(LEAFLET) return LEAFLET.push(done);
+  LEAFLET = [done];
+  var css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+  document.head.appendChild(css);
+  var js = document.createElement('script');
+  js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+  js.onload = function(){ var q = LEAFLET; LEAFLET = null; q.forEach(function(f){ f(window.L); }); };
+  js.onerror = function(){ LEAFLET = null; document.getElementById('rm-note').textContent = '지도를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'; };
+  document.head.appendChild(js);
+}
+var RM = null;   /* 열려 있는 지도 */
+var DAYCOL = ['#1C6FBF','#2A8A55','#E8600C','#7B4BA8','#D22E3E','#B07E00'];
+function rmOpen(title, note, draw){
+  var dlg = document.getElementById('realmap');
+  document.getElementById('rm-title').textContent = title;
+  document.getElementById('rm-note').innerHTML = note;
+  if(!dlg.open) dlg.showModal();
+  loadLeaflet(function(L){
+    if(RM){ RM.remove(); RM = null; }
+    RM = L.map('rm-canvas', {zoomControl:true, scrollWheelZoom:true});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    }).addTo(RM);
+    var pts = draw(L, RM);
+    if(pts.length > 1) RM.fitBounds(pts, {padding:[40,40], maxZoom:17});
+    else if(pts.length) RM.setView(pts[0], 16);
+    else RM.setView([36.4, 127.8], 7);
+    setTimeout(function(){ RM && RM.invalidateSize(); }, 60);
+  });
+}
+function rmPin(L, ll, label, color, tip){
+  var m = L.marker(ll, {icon: L.divIcon({className:'', iconSize:[26,26], iconAnchor:[13,26],
+    html:'<div class="rm-pin" style="background:'+color+'"><span>'+label+'</span></div>'})});
+  if(tip) m.bindTooltip(tip, {direction:'top', offset:[0,-24]});
+  return m;
+}
+function rmStop(L, ll, tag, name, off){
+  return L.marker(ll, {icon: L.divIcon({className:'', iconSize:[0,0],
+    html:'<div class="rm-stop'+(off?' off':'')+'"><i>'+tag+'</i>'+escHtml(name||'')+'</div>'}), zIndexOffset:500});
+}
+function escHtml(t){ return String(t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+/* 일정 전체: 일차별 색으로 번호를 찍고 순서대로 잇는다 */
+function openTripMap(){
+  rmOpen((TRIP && TRIP.title) || '여행 지도',
+    '손가락이나 마우스 휠로 <b>확대</b>할 수 있습니다 · 번호는 일정 순서, 색은 일차',
+    function(L, map){
+      var all = [];
+      DAYS.forEach(function(day, di){
+        var col = DAYCOL[di % DAYCOL.length], line = [], n = 0;
+        day.items.forEach(function(it){
+          if(it.lat==null) return;
+          var ll = [it.lat, it.lng];
+          n++; line.push(ll); all.push(ll);
+          rmPin(L, ll, n, col, day.no+'일차 · '+it.t+' '+escHtml(it.n)).addTo(map);
+        });
+        if(line.length > 1) L.polyline(line, {color:col, weight:3, opacity:.7, dashArray:'6 6'}).addTo(map);
+      });
+      return all;
+    });
+}
+/* 구간 하나: 출발·도착, 그리고 받아 온 노선이 있으면 타는 곳·내리는 곳·지나는 길 */
+function openHopMap(hp){
+  var c = TRANSIT_CACHE[hopKey(hp)];
+  var t = c && c.state==='ok' ? c.data : null;
+  var rides = t ? t.steps.filter(function(x){ return x.kind!=='walk' && x.sy; }) : [];
+  var note = rides.length
+    ? '<b>파란 표시</b>에서 타고 <b>빨간 표시</b>에서 내립니다 · 확대해서 정류장 위치를 확인하세요'
+    : (t ? '이 노선은 정류장 위치 정보가 없어 출발·도착만 표시합니다 · [버스 번호 불러오기]를 다시 누르면 받아 옵니다'
+         : '출발·도착만 표시합니다 · 구간의 <b>[버스 번호 불러오기]</b>를 누르면 타는 곳과 노선이 함께 표시됩니다');
+  rmOpen(hp.from+' → '+hp.to, note, function(L, map){
+    var a = [hp.sy, hp.sx], b = [hp.ey, hp.ex], pts = [a, b];
+    rmPin(L, a, '출', '#171B1F', escHtml(hp.from)).addTo(map);
+    rmPin(L, b, '도', '#E8600C', escHtml(hp.to)).addTo(map);
+    if(!rides.length){
+      L.polyline([a, b], {color:'#78828A', weight:2, dashArray:'4 6'}).addTo(map);
+      return pts;
+    }
+    var prev = a;
+    rides.forEach(function(r){
+      var on = [r.sy, r.sx], off = [r.ey, r.ex];
+      L.polyline([prev, on], {color:'#2A8A55', weight:3, dashArray:'2 6'}).addTo(map);   /* 걸어서 정류장까지 */
+      var path = [on].concat(r.path || []).concat([off]);
+      L.polyline(path, {color: r.kind==='subway' ? '#7B4BA8' : '#1C6FBF', weight:5, opacity:.85}).addTo(map);
+      (r.path || []).slice(1, -1).forEach(function(ll){
+        L.marker(ll, {icon: L.divIcon({className:'', iconSize:[0,0], html:'<div class="rm-dot"></div>'})}).addTo(map);
+      });
+      rmStop(L, on, (r.no||'') + ' 승차', r.start).addTo(map);
+      rmStop(L, off, '하차', r.end, true).addTo(map);
+      pts.push(on, off);
+      prev = off;
+    });
+    L.polyline([prev, b], {color:'#2A8A55', weight:3, dashArray:'2 6'}).addTo(map);
+    /* 처음엔 첫 승차 정류장 근처를 크게 */
+    setTimeout(function(){ map.setView([rides[0].sy, rides[0].sx], 17); }, 80);
+    return pts;
+  });
+}
+document.getElementById('rm-close').addEventListener('click', function(){ document.getElementById('realmap').close(); });
+document.getElementById('realmap').addEventListener('close', function(){ if(RM){ RM.remove(); RM = null; } });
+document.getElementById('rm-open-trip').addEventListener('click', openTripMap);
 
 /* ═══ 일정표 ═══ */
 function buildDays(container){
