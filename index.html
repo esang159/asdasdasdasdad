@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sol Works</title>
-  <link rel="stylesheet" href="style.css?v=20261015j">
+  <link rel="stylesheet" href="style.css?v=20261015k">
 </head>
 <body class="locked hub-mode">
   <!-- 로그인 페이지: 로그인하기 전에는 이것만 보인다 -->
@@ -71,13 +71,15 @@
       <button data-tab="memo">메모</button>
       <button data-tab="backup">백업</button>
     </nav>
-    <div class="sync" id="syncBox">
-      <span class="sync-status" id="syncStatus"></span>
-      <button type="button" class="ghost sync-btn" id="syncBtn">로그아웃</button>
+    <div class="head-info">
+      <span id="todayLabel"></span>
+      <div class="sync" id="syncBox">
+        <span class="sync-status" id="syncStatus"></span>
+        <button type="button" class="ghost sync-btn" id="syncBtn">로그아웃</button>
+      </div>
     </div>
     <div class="today-label">
       <div id="weather" class="weather" hidden></div>
-      <span id="todayLabel"></span>
     </div>
   </header>
 
@@ -232,7 +234,7 @@
     </form>
   </dialog>
 
-  <script src="app.js?v=20261015j"></script>
-  <script type="module" src="sync.js?v=20261015j" onerror="window.solSyncFailed && window.solSyncFailed('스크립트를 불러오지 못했어요')"></script>
+  <script src="app.js?v=20261015k"></script>
+  <script type="module" src="sync.js?v=20261015k" onerror="window.solSyncFailed && window.solSyncFailed('스크립트를 불러오지 못했어요')"></script>
 </body>
 </html>
