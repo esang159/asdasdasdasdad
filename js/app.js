@@ -365,37 +365,8 @@ function renderNotices() {
     (m.error ? ` · 공고 파일을 읽지 못했습니다` : "") +
     (m.errors && m.errors.length ? ` · 수집 오류 ${m.errors.length}건` : "");
 
-  $("#nList").innerHTML = list.length ? groupedCards(list, sort) : `<p class="meta">조건에 맞는 공고가 없습니다.</p>`;
+  $("#nList").innerHTML = list.length ? list.map(noticeCardHTML).join("") : `<p class="meta">조건에 맞는 공고가 없습니다.</p>`;
   renderPager(pages);
-}
-
-// 정렬 기준이 눈에 보이게 목록 중간에 구분선을 넣는다.
-// 최신 등록순 → 등록한 날짜별, 마감 임박순 → 오늘·3일 안·7일 안·그 이후·상시
-function noticeGroup(n, sort) {
-  if (sort === "deadline") {
-    const d = daysUntil(n.end);
-    if (d == null) return "마감일 없음 (상시)";
-    if (d < 0) return "마감 지남";
-    if (d === 0) return "오늘 마감";
-    if (d <= 3) return "3일 안 마감";
-    if (d <= 7) return "7일 안 마감";
-    if (d <= 30) return "한 달 안 마감";
-    return "한 달 넘게 남음";
-  }
-  const r = regDate(n);
-  if (!r) return "등록일 모름";
-  const [, m, d] = r.split("-").map(Number);
-  const diff = -daysUntil(r);
-  return `${m}월 ${d}일 등록` + (diff === 0 ? " · 오늘" : diff === 1 ? " · 어제" : "");
-}
-function groupedCards(list, sort) {
-  let last = null, html = "";
-  for (const n of list) {
-    const g = noticeGroup(n, sort);
-    if (g !== last) { html += `<h3 class="ngroup">${esc(g)}</h3>`; last = g; }
-    html += noticeCardHTML(n);
-  }
-  return html;
 }
 
 // 공고 한 건 (사업공고 · 공공조달 탭이 함께 쓴다). 긴 소개 문단은 빼고 대상·문의까지만 보여준다.
@@ -579,7 +550,7 @@ function renderProc() {
   const from = (state.pPage - 1) * per;
   list = list.slice(from, from + per);
   $("#pMeta").textContent = `${total}건` + (total > per ? ` 중 ${from + 1}–${from + list.length}` : "");
-  $("#pList").innerHTML = list.length ? groupedCards(list, $("#pSort").value)
+  $("#pList").innerHTML = list.length ? list.map(noticeCardHTML).join("")
     : `<p class="meta">조건에 맞는 공고가 없습니다. 조달 관련 공고는 매일 아침 수집 때 함께 모입니다.</p>`;
   renderPager(pages, "#pPager", state.pPage);
 }
