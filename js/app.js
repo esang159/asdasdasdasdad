@@ -101,6 +101,17 @@ function ddayBadge(end) {
   return `<span class="badge dday ${n <= 3 ? "urgent" : ""}">${label}</span>`;
 }
 
+// 최신 등록순. 출처마다 '등록일' 칸 뜻이 달라서(K-Startup·NTIS는 접수 시작일) 미래 날짜는 처음 본 날로 낮춘다.
+// 그래야 지원사업·연구과제가 실제 날짜대로 섞이고, 접수 시작이 먼 공고가 맨 위에 몰리지 않는다.
+function regDate(n) {
+  const seen = n.first_seen || "";
+  const p = n.posted || seen;
+  return seen && p > seen ? seen : p;
+}
+function byNewest(a, b) {
+  return regDate(b).localeCompare(regDate(a)) || (a.end || "9999").localeCompare(b.end || "9999");
+}
+
 function isNew(n) {
   const d = daysUntil(n.first_seen);
   return d != null && d >= -2; // 최근 3일 안에 처음 수집됨
@@ -337,7 +348,7 @@ function renderNotices() {
       findNotice(id) || { id, title: m.title, url: m.url, end: m.end, kind: m.kind, source: "", regions: [] });
   }
   if (sort === "deadline") list.sort((a, b) => (a.end || "9999").localeCompare(b.end || "9999"));
-  else list.sort((a, b) => (b.first_seen || "").localeCompare(a.first_seen || "") || (b.posted || "").localeCompare(a.posted || ""));
+  else list.sort(byNewest);
 
   // 한 번에 다 그리지 않고 10·30·50개씩 끊어서 보여준다
   const total = list.length;
@@ -532,7 +543,7 @@ function renderProc() {
   let list = pool.filter((n) => !state.pTag || n.proc.includes(state.pTag));
   if (q) list = list.filter((n) => [n.title, n.org, n.category].join(" ").toLowerCase().includes(q));
   if ($("#pSort").value === "deadline") list.sort((a, b) => (a.end || "9999").localeCompare(b.end || "9999"));
-  else list.sort((a, b) => (b.first_seen || "").localeCompare(a.first_seen || "") || (b.posted || "").localeCompare(a.posted || ""));
+  else list.sort(byNewest);
   const total = list.length, per = Number($("#pPer").value) || 10;
   const pages = Math.max(1, Math.ceil(total / per));
   state.pPage = Math.min(Math.max(1, state.pPage || 1), pages);
