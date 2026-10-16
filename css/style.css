@@ -263,6 +263,9 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .nc-foot .grow { flex: 1; }
 .nc-foot button { font-size: 12px; padding: 4px 10px; }
 .nc-hash { color: var(--accent); }
+.ngroup { margin: 10px 0 -4px; font-size: 13px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+.ngroup::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.notice-list .ngroup:first-child { margin-top: 0; }
 .star {
   background: none; color: var(--muted); padding: 3px; border-radius: 6px; line-height: 0;
   display: inline-flex; align-items: center; justify-content: center;
