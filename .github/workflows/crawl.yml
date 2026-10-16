@@ -1,8 +1,12 @@
 name: 사업공고 수집
 
 on:
+  # GitHub 예약 실행은 붐비면 늦어지거나 빠지기도 해서 아침에 세 번 걸어 둔다.
+  # 그날 이미 수집했으면(아래 '오늘 이미 했는지') 나머지는 바로 끝난다.
   schedule:
-    - cron: "47 23 * * *"  # 매일 08:47 KST (정각은 붐벼서 늦어지므로 조금 앞당김 → 보통 9시 전후 도착)
+    - cron: "47 23 * * *"  # 08:47 KST (보통 9시 전후 도착)
+    - cron: "37 0 * * *"   # 09:37 KST (첫 번째가 빠졌을 때)
+    - cron: "27 1 * * *"   # 10:27 KST (두 번째도 빠졌을 때)
   workflow_dispatch:        # Actions 탭에서 수동 실행
     inputs:
       kakao_test:
@@ -23,15 +27,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: 오늘 이미 했는지
+        id: done
+        if: github.event_name == 'schedule'
+        run: |
+          today=$(TZ=Asia/Seoul date +%F)
+          last=$(python3 -c "import json;print(json.load(open('data/notices.json')).get('updated_at','')[:10])" 2>/dev/null || true)
+          echo "오늘 $today / 마지막 수집 $last"
+          if [ "$last" = "$today" ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; echo "이미 수집함 - 건너뜀"; fi
       - uses: actions/setup-python@v5
+        if: steps.done.outputs.skip != 'true'
         with:
           python-version: "3.12"
       - name: 수집
+        if: steps.done.outputs.skip != 'true'
         env:
           BIZINFO_API_KEY: ${{ secrets.BIZINFO_API_KEY }}
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
         run: python crawler/crawl.py
       - name: 변경 사항 커밋
+        if: steps.done.outputs.skip != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -41,6 +56,7 @@ jobs:
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push
       - name: 카카오톡 알림
+        if: steps.done.outputs.skip != 'true'
         continue-on-error: true   # 알림이 실패해도 수집 결과는 그대로 둔다
         env:
           KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
