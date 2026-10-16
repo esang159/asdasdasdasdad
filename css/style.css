@@ -215,8 +215,6 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .kind-toggle button.k-rnd.on { background: var(--rnd); color: var(--on-accent); }
 .kind-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .notice-tools { padding-top: 14px; border-top: 1px solid var(--line); }
-.notice.is-support { box-shadow: inset 4px 0 0 var(--support); padding-left: 18px; }
-.notice.is-rnd { box-shadow: inset 4px 0 0 var(--rnd); padding-left: 18px; }
 .notice-tools { display: flex; gap: 8px; flex-wrap: wrap; }
 .notice-tools input { flex: 2; min-width: 180px; }
 .notice-tools select { flex: 1; min-width: 120px; width: auto; }
@@ -230,20 +228,40 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .pager button.on { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
 .pager button:disabled { opacity: .35; cursor: default; }
 .pager .gap { color: var(--muted); padding: 0 4px; }
-/* 공고 한 건 = 카드 한 장. 테두리·간격으로 확실히 나눈다 */
-.notice-list { display: flex; flex-direction: column; gap: 10px; }
-.notice {
-  display: flex; gap: 12px; align-items: flex-start;
-  padding: 14px 16px; background: #0d0c0b; border: 1px solid #3a3632; border-radius: 12px;
+/* 공고 한 건 = 공고문 한 장: 위 띠(구분·출처·분야) / 왼쪽 마감 칸 + 제목·항목 / 아래 접수기간·메모 */
+.notice-list { display: flex; flex-direction: column; gap: 14px; }
+.nc { background: #0b0a09; border: 1px solid #46403a; border-radius: 10px; overflow: hidden; }
+.nc:hover { border-color: #5c554e; }
+.nc-band {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 6px 8px 6px 14px; background: #1c1a18; border-bottom: 1px solid #46403a; font-size: 12px; color: var(--muted);
 }
-.notice:hover { border-color: var(--rule); }
-.notice .body { flex: 1; min-width: 0; }
-.notice .title { font-weight: 600; font-size: 14px; }
-.notice .sub { color: var(--muted); font-size: 12px; margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.notice .facts { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; margin-top: 4px; }
-.notice .facts b { color: var(--muted); font-weight: 500; margin-right: 2px; }
-.notice .actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
-.notice .actions button { font-size: 12px; padding: 4px 10px; }
+.nc.is-support .nc-band { box-shadow: inset 0 2px 0 var(--support); }
+.nc.is-rnd .nc-band { box-shadow: inset 0 2px 0 var(--rnd); }
+.nc-band .grow { flex: 1; }
+.nc-band .star { margin: -2px 0; }
+.nc-src { min-width: 0; }
+.nc-body { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 16px; padding: 14px 16px 10px; }
+.nc-d { display: grid; place-content: center; text-align: center; align-self: start; min-height: 72px; border-radius: 8px; background: #1c1a18; padding: 8px 4px; }
+.nc-d b { font-size: 21px; line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--muted); }
+.nc-d small { display: block; margin-top: 6px; font-size: 11px; color: var(--muted); }
+.nc-d.urgent { background: var(--hot-soft); } .nc-d.urgent b { color: var(--hot); }
+.nc-d.soon { background: var(--warn-soft); } .nc-d.soon b { color: var(--warn); }
+.nc-d.calm b { color: var(--text); }
+.nc-d.open b, .nc-d.closed b { font-size: 16px; }
+.nc-main { min-width: 0; }
+.nc .title { font-size: 16px; line-height: 1.45; font-weight: 600; }
+.nc .title a { color: var(--text); }
+.nc-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 10px 0 0; font-size: 13px; }
+.nc-facts dt { color: var(--muted); font-size: 12px; line-height: 1.75; }
+.nc-facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.nc-foot {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 16px; border-top: 1px dashed #46403a; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.nc-foot .grow { flex: 1; }
+.nc-foot button { font-size: 12px; padding: 4px 10px; }
+.nc-hash { color: var(--accent); }
 .star {
   background: none; color: var(--muted); padding: 3px; border-radius: 6px; line-height: 0;
   display: inline-flex; align-items: center; justify-content: center;
@@ -256,9 +274,11 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 @media (prefers-reduced-motion: reduce) { .star svg { transition: none; } }
 #homeTodo .grow, #todoList .grow { white-space: normal; }
 @media (max-width: 600px) {
-  .notice { flex-wrap: wrap; }
-  .notice .body { flex-basis: calc(100% - 40px); }
-  .notice .actions { flex-direction: row; align-items: center; justify-content: flex-end; width: 100%; }
+  .nc-body { grid-template-columns: 60px minmax(0, 1fr); gap: 12px; padding: 12px; }
+  .nc-d { min-height: 60px; }
+  .nc-d b { font-size: 17px; }
+  .nc-facts { gap: 4px 10px; font-size: 12.5px; }
+  .nc-band .star { margin-left: auto; }
   .kind-toggle { display: flex; }
   .kind-toggle button { flex: 1; justify-content: center; padding: 8px 6px; }
 }

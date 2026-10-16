@@ -360,34 +360,38 @@ function renderNotices() {
 
 // 공고 한 건 (사업공고 · 공공조달 탭이 함께 쓴다). 긴 소개 문단은 빼고 대상·문의까지만 보여준다.
 function noticeCardHTML(n) {
+  const rnd = (n.kind || "지원사업") === "연구과제";
+  const d = daysUntil(n.end);
+  const lv = d == null ? "open" : d < 0 ? "closed" : d <= 3 ? "urgent" : d <= 7 ? "soon" : "calm";
+  const big = d == null ? "상시" : d < 0 ? "마감" : d === 0 ? "D-Day" : `D-${d}`;
+  const md = (x) => (x ? x.slice(5).replace("-", ".") : "?");
+  const facts = [["기관", n.org], ["지역", n.regions && n.regions.length ? n.regions.join(", ") : "전국"],
+    ["대상", n.target], ["업력", n.age], ["문의", n.contact]].filter(([, v]) => v);
   return `
-    <div class="notice ${(n.kind || "지원사업") === "연구과제" ? "is-rnd" : "is-support"}">
-      <button class="star ${state.stars[n.id] ? "on" : ""}" data-star="${esc(n.id)}" title="관심공고" aria-pressed="${!!state.stars[n.id]}">${STAR_SVG}</button>
-      <div class="body">
-        <div class="title"><a href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}</a></div>
-        <div class="sub">
-          ${isNew(n) ? `<span class="badge new">NEW</span>` : ""}
-          ${kindBadge(n)}
-          ${(n.proc || []).map((t) => `<span class="badge proc">${esc(t)}</span>`).join("")}
-          <span class="badge">${esc([n.source, ...(n.also || [])].join(" · "))}</span>
-          ${n.org ? `<span>${esc(n.org)}</span>` : ""}
-          ${n.category ? `<span>· ${esc(n.category)}</span>` : ""}
-          <span>· 접수 ${esc(n.start || "?")} ~ ${esc(n.end || "?")}</span>
-        </div>
-        <div class="facts">
-          <span><b>지역</b> ${esc(n.regions && n.regions.length ? n.regions.join(", ") : "전국")}</span>
-          ${n.target ? `<span><b>대상</b> ${esc(n.target)}</span>` : ""}
-          ${n.age ? `<span><b>업력</b> ${esc(n.age)}</span>` : ""}
-          ${n.contact ? `<span><b>문의</b> ${esc(n.contact)}</span>` : ""}
-          ${(n.matched || []).map((k) => `<span class="badge new">#${esc(k)}</span>`).join("")}
-        </div>
-        ${noticeMemoHTML(n)}
+    <article class="notice nc ${rnd ? "is-rnd" : "is-support"}">
+      <div class="nc-band">
+        ${kindBadge(n)}
+        <span class="nc-src">${esc([n.source, ...(n.also || [])].join(" · "))}${n.category ? " · " + esc(n.category) : ""}</span>
+        ${(n.proc || []).map((t) => `<span class="badge proc">${esc(t)}</span>`).join("")}
+        ${isNew(n) ? `<span class="badge new">NEW</span>` : ""}
+        <span class="grow"></span>
+        <button class="star ${state.stars[n.id] ? "on" : ""}" data-star="${esc(n.id)}" title="관심공고" aria-pressed="${!!state.stars[n.id]}">${STAR_SVG}</button>
       </div>
-      <div class="actions">
-        ${ddayBadge(n.end)}
+      <div class="nc-body">
+        <div class="nc-d ${lv}"><b>${big}</b><small>${n.end ? md(n.end) + " 마감" : "기한 없음"}</small></div>
+        <div class="nc-main">
+          <div class="title"><a href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}</a></div>
+          <dl class="nc-facts">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+          ${noticeMemoHTML(n)}
+        </div>
+      </div>
+      <div class="nc-foot">
+        <span>접수 ${md(n.start)} ~ ${md(n.end)}</span>
+        ${(n.matched || []).map((k) => `<span class="nc-hash">#${esc(k)}</span>`).join("")}
+        <span class="grow"></span>
         <button class="ghost" data-memo="${esc(n.id)}">${state.noticeMemos[n.id] ? "메모 수정" : "메모 추가"}</button>
       </div>
-    </div>`;
+    </article>`;
 }
 
 // 페이지 번호: 처음 · 이전 · (지금 페이지 앞뒤 2쪽) · 다음 · 끝
