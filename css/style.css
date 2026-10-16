@@ -215,8 +215,8 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .kind-toggle button.k-rnd.on { background: var(--rnd); color: var(--on-accent); }
 .kind-toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .notice-tools { padding-top: 14px; border-top: 1px solid var(--line); }
-.notice.is-support { box-shadow: inset 3px 0 0 var(--support); padding-left: 12px; }
-.notice.is-rnd { box-shadow: inset 3px 0 0 var(--rnd); padding-left: 12px; }
+.notice.is-support { box-shadow: inset 4px 0 0 var(--support); padding-left: 18px; }
+.notice.is-rnd { box-shadow: inset 4px 0 0 var(--rnd); padding-left: 18px; }
 .notice-tools { display: flex; gap: 8px; flex-wrap: wrap; }
 .notice-tools input { flex: 2; min-width: 180px; }
 .notice-tools select { flex: 1; min-width: 120px; width: auto; }
@@ -230,17 +230,18 @@ button.icon { background: none; color: var(--muted); padding: 2px 6px; }
 .pager button.on { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
 .pager button:disabled { opacity: .35; cursor: default; }
 .pager .gap { color: var(--muted); padding: 0 4px; }
+/* 공고 한 건 = 카드 한 장. 테두리·간격으로 확실히 나눈다 */
+.notice-list { display: flex; flex-direction: column; gap: 10px; }
 .notice {
   display: flex; gap: 12px; align-items: flex-start;
-  padding: 12px 0; border-bottom: 1px solid var(--line);
+  padding: 14px 16px; background: #0d0c0b; border: 1px solid #3a3632; border-radius: 12px;
 }
-.notice:last-child { border-bottom: 0; }
+.notice:hover { border-color: var(--rule); }
 .notice .body { flex: 1; min-width: 0; }
 .notice .title { font-weight: 600; font-size: 14px; }
 .notice .sub { color: var(--muted); font-size: 12px; margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .notice .facts { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; margin-top: 4px; }
 .notice .facts b { color: var(--muted); font-weight: 500; margin-right: 2px; }
-.notice .summary { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .notice .actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
 .notice .actions button { font-size: 12px; padding: 4px 10px; }
 .star {
@@ -528,3 +529,14 @@ button.brand:hover .logo { color: var(--accent); }
 .nmemo-edit { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
 .nmemo-edit textarea { font-size: 13px; }
 .nmemo-edit .row button { font-size: 12px; padding: 5px 12px; }
+
+/* 공공조달 탭 */
+#tab-proc h2 small { font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 6px; }
+.proc-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.proc-tags button { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 13px; }
+.proc-tags button .cnt { font-size: 11px; opacity: .75; margin-left: 2px; font-variant-numeric: tabular-nums; }
+.proc-tags button.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.proc-tags button:disabled { opacity: .35; cursor: default; }
+.badge.proc { background: var(--warn-soft); color: var(--warn); }
+.proc-links { margin-top: 14px; }
+.proc-links a { color: var(--accent); }

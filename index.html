@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="assets/favicon/apple-touch-icon.png">
   <link rel="manifest" href="assets/favicon/site.webmanifest">
   <meta name="theme-color" content="#0b0a09">
-  <link rel="stylesheet" href="css/style.css?v=20261016a">
+  <link rel="stylesheet" href="css/style.css?v=20261016b">
 </head>
 <body class="locked hub-mode">
   <!-- 로그인 페이지: 로그인하기 전에는 이것만 보인다 -->
@@ -73,6 +73,7 @@
     <nav class="tabs" role="tablist">
       <button data-tab="home" class="active">대시보드</button>
       <button data-tab="notices">사업공고</button>
+      <button data-tab="proc">공공조달</button>
       <button data-tab="memo">메모</button>
       <button data-tab="backup">백업</button>
     </nav>
@@ -189,6 +190,29 @@
       </div>
     </section>
 
+    <!-- 공공조달: 매일 모은 공고 중 조달 관련만 -->
+    <section id="tab-proc" class="tab">
+      <div class="card">
+        <h2>공공조달 <small>우수제품 · 혁신제품 · 성능인증(EPC) · NET·NEP · 녹색인증 · GS인증 · 조달청/공공구매</small></h2>
+        <div class="proc-tags" id="pTags" role="group" aria-label="조달 분류"></div>
+        <div class="notice-tools">
+          <input id="pSearch" placeholder="검색 (제목·기관)">
+          <select id="pFilter"><option value="open">접수중·예정</option><option value="all">전체</option></select>
+          <select id="pSort"><option value="new">최신순</option><option value="deadline">마감 임박순</option></select>
+          <select id="pPer" aria-label="한 페이지에 보일 공고 수"><option value="10">10개씩</option><option value="30">30개씩</option><option value="50">50개씩</option></select>
+        </div>
+        <p class="meta" id="pMeta"></p>
+        <div id="pList" class="notice-list"></div>
+        <nav id="pPager" class="pager" aria-label="공공조달 페이지"></nav>
+        <p class="meta proc-links">바로가기 ·
+          <a href="https://www.pps.go.kr" target="_blank" rel="noopener">조달청</a> ·
+          <a href="https://ppi.g2b.go.kr" target="_blank" rel="noopener">혁신장터</a> ·
+          <a href="https://www.smpp.go.kr" target="_blank" rel="noopener">공공구매종합정보망(SMPP)</a> ·
+          <a href="https://www.greencertif.or.kr" target="_blank" rel="noopener">녹색인증</a>
+        </p>
+      </div>
+    </section>
+
     <!-- 메모 (포스트잇) -->
     <section id="tab-memo" class="tab">
       <div class="memo-head">
@@ -246,7 +270,7 @@
     </form>
   </dialog>
 
-  <script src="js/app.js?v=20261016a"></script>
+  <script src="js/app.js?v=20261016b"></script>
   <script src="js/feedback.js?v=20261015r"></script>
   <script type="module" src="js/sync.js?v=20261015s" onerror="window.solSyncFailed && window.solSyncFailed('스크립트를 불러오지 못했어요')"></script>
   <script type="module" src="js/feedback-store.js?v=20261015r"></script>

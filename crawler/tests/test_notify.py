@@ -16,13 +16,23 @@ class BuildMessageTest(unittest.TestCase):
         self.assertIsNone(nk.build_message({"sample": True, "items": self.items(3)}, "2026-10-15"))
         self.assertIsNone(nk.build_message({"items": self.items(3)}, "2026-10-16"))
 
-    def test_fits_limit_and_puts_keyword_match_first(self):
-        msg = nk.build_message({"items": self.items(8)}, "2026-10-15")
+    def test_summary_not_list(self):
+        items = self.items(8)
+        items[0]["category"] = "경영"; items[2]["category"] = "경영"; items[1]["category"] = "국가R&D · 접수중"
+        items[4]["proc"] = ["혁신제품"]
+        msg = nk.build_message({"items": items}, "2026-10-15")
+        lines = msg.split("\n")
         self.assertLessEqual(len(msg), nk.TEXT_LIMIT)
-        self.assertTrue(msg.startswith("[Sol Works] 10월 15일 새 공고 8건"))
-        self.assertIn("공고 제목 3", msg.split("\n")[1])
-        self.assertIn("외 ", msg)
+        self.assertEqual(lines[0], "[Sol Works] 10월 15일 새 공고 8건")
+        self.assertEqual(lines[1], "지원사업 4건 · 연구과제 4건")
+        self.assertEqual(lines[2], "분야: 경영 2 · R&D 1 · 기타 5")
+        self.assertIn("관심 키워드 1건", lines[3])
+        self.assertIn("공공조달 1건", lines[3])
+        self.assertNotIn("공고 제목", msg)   # 공고 제목을 늘어놓지 않는다
 
+    def test_field_names_merged(self):
+        self.assertEqual(nk.field_of({"category": "판로ㆍ해외진출"}), "수출")
+        self.assertEqual(nk.field_of({}), "기타")
 
 if __name__ == "__main__":
     unittest.main()

@@ -354,7 +354,13 @@ function renderNotices() {
     (m.error ? ` · 공고 파일을 읽지 못했습니다` : "") +
     (m.errors && m.errors.length ? ` · 수집 오류 ${m.errors.length}건` : "");
 
-  $("#nList").innerHTML = list.length ? list.map((n) => `
+  $("#nList").innerHTML = list.length ? list.map(noticeCardHTML).join("") : `<p class="meta">조건에 맞는 공고가 없습니다.</p>`;
+  renderPager(pages);
+}
+
+// 공고 한 건 (사업공고 · 공공조달 탭이 함께 쓴다). 긴 소개 문단은 빼고 대상·문의까지만 보여준다.
+function noticeCardHTML(n) {
+  return `
     <div class="notice ${(n.kind || "지원사업") === "연구과제" ? "is-rnd" : "is-support"}">
       <button class="star ${state.stars[n.id] ? "on" : ""}" data-star="${esc(n.id)}" title="관심공고" aria-pressed="${!!state.stars[n.id]}">${STAR_SVG}</button>
       <div class="body">
@@ -362,6 +368,7 @@ function renderNotices() {
         <div class="sub">
           ${isNew(n) ? `<span class="badge new">NEW</span>` : ""}
           ${kindBadge(n)}
+          ${(n.proc || []).map((t) => `<span class="badge proc">${esc(t)}</span>`).join("")}
           <span class="badge">${esc([n.source, ...(n.also || [])].join(" · "))}</span>
           ${n.org ? `<span>${esc(n.org)}</span>` : ""}
           ${n.category ? `<span>· ${esc(n.category)}</span>` : ""}
@@ -374,26 +381,23 @@ function renderNotices() {
           ${n.contact ? `<span><b>문의</b> ${esc(n.contact)}</span>` : ""}
           ${(n.matched || []).map((k) => `<span class="badge new">#${esc(k)}</span>`).join("")}
         </div>
-        ${n.summary ? `<div class="summary">${esc(n.summary)}</div>` : ""}
         ${noticeMemoHTML(n)}
       </div>
       <div class="actions">
         ${ddayBadge(n.end)}
         <button class="ghost" data-memo="${esc(n.id)}">${state.noticeMemos[n.id] ? "메모 수정" : "메모 추가"}</button>
       </div>
-    </div>`).join("") : `<p class="meta">조건에 맞는 공고가 없습니다.</p>`;
-  renderPager(pages);
+    </div>`;
 }
 
 // 페이지 번호: 처음 · 이전 · (지금 페이지 앞뒤 2쪽) · 다음 · 끝
-function renderPager(pages) {
-  const cur = state.nPage;
-  if (pages <= 1) { $("#nPager").innerHTML = ""; return; }
+function renderPager(pages, el = "#nPager", cur = state.nPage) {
+  if (pages <= 1) { $(el).innerHTML = ""; return; }
   const nums = [];
   for (let i = Math.max(1, cur - 2); i <= Math.min(pages, cur + 2); i++) nums.push(i);
   const btn = (p, label, extra = "") =>
     `<button type="button" data-page="${p}" ${extra}>${label}</button>`;
-  $("#nPager").innerHTML =
+  $(el).innerHTML =
     btn(1, "«", cur === 1 ? "disabled aria-label=\"처음\"" : "aria-label=\"처음\"") +
     btn(cur - 1, "이전", cur === 1 ? "disabled" : "") +
     (nums[0] > 1 ? `<span class="gap">…</span>` : "") +
@@ -466,7 +470,8 @@ function findNotice(id) {
   return state.notices.find((n) => n.id === id) || state.stars[id];
 }
 
-$("#nList").addEventListener("click", (e) => {
+function onNoticeListClick(e) {
+  const box = e.currentTarget;
   const starId = e.target.closest("[data-star]")?.dataset.star;
   if (starId) {
     if (state.stars[starId]) delete state.stars[starId];
@@ -479,15 +484,15 @@ $("#nList").addEventListener("click", (e) => {
   if (!b) return;
   if (b.dataset.memo) {
     state.editingMemo = b.dataset.memo;
-    renderNotices();
-    const ta = $("#nList .nmemo-text");
+    renderNotices(); renderProc();
+    const ta = box.querySelector(".nmemo-text");
     ta?.focus();
     ta?.setSelectionRange(ta.value.length, ta.value.length);
   } else if ("memoCancel" in b.dataset) {
     state.editingMemo = null;
     renderNotices();
   } else if (b.dataset.memoSave) {
-    const id = b.dataset.memoSave, text = $("#nList .nmemo-text").value.trim();
+    const id = b.dataset.memoSave, text = box.querySelector(".nmemo-text").value.trim();
     if (text) {
       const n = findNotice(id) || {};
       state.noticeMemos[id] = { text, updated: new Date().toISOString(), title: n.title, url: n.url, end: n.end, kind: n.kind };
@@ -503,6 +508,49 @@ $("#nList").addEventListener("click", (e) => {
     state.editingMemo = null;
     renderNotices();
   }
+  renderProc();
+}
+$("#nList").addEventListener("click", onNoticeListClick);
+$("#pList").addEventListener("click", onNoticeListClick);
+
+// ---------------------------------------------------------------- 공공조달
+// 매일 모은 공고 가운데 조달 관련(우수제품·혁신제품·성능인증·NET·NEP·녹색인증·GS인증·조달청/공공구매)만 모은다.
+// 분류는 수집기(crawler/crawl.py 의 PROC_RULES)가 제목을 보고 붙인 n.proc 를 쓴다.
+const PROC_TAGS = ["우수제품", "혁신제품", "성능인증", "NET·NEP", "녹색인증", "GS인증", "조달·공공구매"];
+state.pTag = "";
+function renderProc() {
+  const all = state.notices.filter((n) => n.proc && n.proc.length);
+  const openOnly = $("#pFilter").value === "open";
+  const pool = openOnly ? all.filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; }) : all;
+  $("#pTags").innerHTML = [["", "전체", pool.length]].concat(PROC_TAGS.map((t) => [t, t, pool.filter((n) => n.proc.includes(t)).length]))
+    .map(([v, label, c]) => `<button type="button" data-ptag="${esc(v)}" class="${state.pTag === v ? "on" : ""}" ${c || !v ? "" : "disabled"}>${esc(label)} <span class="cnt">${c}</span></button>`).join("");
+  const q = $("#pSearch").value.trim().toLowerCase();
+  let list = pool.filter((n) => !state.pTag || n.proc.includes(state.pTag));
+  if (q) list = list.filter((n) => [n.title, n.org, n.category].join(" ").toLowerCase().includes(q));
+  if ($("#pSort").value === "deadline") list.sort((a, b) => (a.end || "9999").localeCompare(b.end || "9999"));
+  else list.sort((a, b) => (b.first_seen || "").localeCompare(a.first_seen || "") || (b.posted || "").localeCompare(a.posted || ""));
+  const total = list.length, per = Number($("#pPer").value) || 10;
+  const pages = Math.max(1, Math.ceil(total / per));
+  state.pPage = Math.min(Math.max(1, state.pPage || 1), pages);
+  const from = (state.pPage - 1) * per;
+  list = list.slice(from, from + per);
+  $("#pMeta").textContent = `${total}건` + (total > per ? ` 중 ${from + 1}–${from + list.length}` : "");
+  $("#pList").innerHTML = list.length ? list.map(noticeCardHTML).join("")
+    : `<p class="meta">조건에 맞는 공고가 없습니다. 조달 관련 공고는 매일 아침 수집 때 함께 모입니다.</p>`;
+  renderPager(pages, "#pPager", state.pPage);
+}
+$("#pTags").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-ptag]");
+  if (!b || b.disabled) return;
+  state.pTag = b.dataset.ptag; state.pPage = 1; renderProc();
+});
+["#pSearch", "#pFilter", "#pSort", "#pPer"].forEach((s) =>
+  $(s).addEventListener("input", () => { state.pPage = 1; renderProc(); }));
+$("#pPager").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-page]");
+  if (!b || b.disabled) return;
+  state.pPage = Number(b.dataset.page); renderProc();
+  $("#tab-proc").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 // ---------------------------------------------------------------- 진행 중인 업무
@@ -1040,6 +1088,7 @@ function renderAll() {
   renderHome();
   renderCalendar();
   renderNotices();
+  renderProc();
   renderNotes();
 }
 

@@ -29,7 +29,6 @@ NOTICES = ROOT / "data" / "notices.json"
 KST = timezone(timedelta(hours=9))
 DEFAULT_PAGE = "https://www.solworks.store/"
 TEXT_LIMIT = 200   # 기본 텍스트 템플릿 본문 길이에 여유를 두고 맞춘다
-MAX_ITEMS = 5
 
 
 def post_form(url: str, data: dict, token: str | None = None) -> dict:
@@ -72,31 +71,59 @@ def send_text(token: str, text: str, page_url: str) -> None:
         raise RuntimeError(f"전송 실패: {res}")
 
 
+# 출처마다 다른 분야 이름을 몇 갈래로 묶는다 (기업마당 분류는 그대로 쓴다)
+FIELD_MAP = {
+    "사업화": "창업", "창업교육": "창업", "멘토링ㆍ컨설팅ㆍ교육": "교육·컨설팅",
+    "시설ㆍ공간ㆍ보육": "공간·보육", "행사ㆍ네트워크": "행사", "판로ㆍ해외진출": "수출", "글로벌": "수출",
+    "융자ㆍ보증": "금융", "정책자금": "금융", "기술개발(R&amp;D)": "기술", "기술개발(R&D)": "기술",
+    "국가R&D": "R&D",
+}
+
+
+def field_of(n: dict) -> str:
+    cat = (n.get("category") or "").split(" · ")[0].strip()
+    return FIELD_MAP.get(cat, cat) or "기타"
+
+
 def build_message(data: dict, today: str, tag: str = "") -> str | None:
-    """오늘 처음 들어온 공고로 메시지를 만든다. 없으면 None. 관심 키워드가 맞는 공고를 먼저."""
+    """오늘 처음 들어온 공고를 요약한다. 없으면 None.
+    공고를 하나하나 늘어놓지 않고 구분·분야별 건수와 눈여겨볼 것만 적는다."""
     if data.get("sample"):
         return None
     fresh = [n for n in data.get("items", []) if n.get("first_seen") == today]
     if not fresh:
         return None
-    fresh.sort(key=lambda n: (not n.get("matched"), n.get("end") or "9999"))
     m, d = today[5:7].lstrip("0"), today[8:10].lstrip("0")
     head = f"[Sol Works{tag}] {m}월 {d}일 새 공고 {len(fresh)}건"
-    lines, used = [], len(head)
-    for n in fresh[:MAX_ITEMS]:
-        kind = "연구" if n.get("kind") == "연구과제" else "지원"
-        end = f" ~{n['end'][5:].replace('-', '/')}" if n.get("end") else ""
-        line = f"\n· ({kind}) {n.get('title', '')}"
-        room = TEXT_LIMIT - used - len(end) - 12   # '외 n건' 자리를 남긴다
-        if room < 15:
-            break
-        if len(line) > room:
-            line = line[:room - 1] + "…"
-        lines.append(line + end)
-        used += len(line) + len(end)
-    rest = len(fresh) - len(lines)
-    tail = f"\n외 {rest}건" if rest > 0 else ""
-    return head + "".join(lines) + tail
+
+    support = sum(1 for n in fresh if n.get("kind") != "연구과제")
+    lines = [f"지원사업 {support}건 · 연구과제 {len(fresh) - support}건"]
+
+    fields: dict[str, int] = {}
+    for n in fresh:
+        f = field_of(n)
+        fields[f] = fields.get(f, 0) + 1
+    top = sorted(fields.items(), key=lambda kv: (kv[0] == "기타", -kv[1], kv[0]))   # 기타는 맨 끝
+    shown, rest = top[:5], sum(c for _, c in top[5:])
+    parts = [f"{k} {v}" for k, v in shown] + ([f"그 외 {rest}"] if rest else [])
+    lines.append("분야: " + " · ".join(parts))
+
+    extra = []
+    matched = sum(1 for n in fresh if n.get("matched"))
+    if matched:
+        extra.append(f"관심 키워드 {matched}건")
+    soon_limit = (datetime.fromisoformat(today) + timedelta(days=7)).date().isoformat()
+    soon = sum(1 for n in fresh if n.get("end") and today <= n["end"] <= soon_limit)
+    if soon:
+        extra.append(f"7일 안 마감 {soon}건")
+    proc = sum(1 for n in fresh if n.get("proc"))
+    if proc:
+        extra.append(f"공공조달 {proc}건")
+    if extra:
+        lines.append(" · ".join(extra))
+
+    text = head + "\n" + "\n".join(lines)
+    return text[:TEXT_LIMIT]
 
 
 def main() -> int:

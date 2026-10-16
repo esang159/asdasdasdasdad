@@ -399,6 +399,22 @@ def match_keywords(item: dict, keywords: list[str]) -> list[str]:
 
 RND_RE = re.compile(r"R&D|R&amp;D|연구개발|기술개발|연구과제|과제\s*공모|원천기술|기초연구")
 
+# 공공조달 관련 공고 분류 (제목 기준). 순서대로 보고, 걸리는 것을 모두 붙인다.
+PROC_RULES = [
+    ("우수제품", re.compile(r"우수조달|우수제품(?!\s*품질)")),       # '제주우수제품품질인증(JQ)' 같은 지역 품질인증은 뺀다
+    ("혁신제품", re.compile(r"혁신제품|혁신시제품|혁신조달|혁신장터")),
+    ("성능인증", re.compile(r"성능인증|(?<![A-Za-z])EPC(?![A-Za-z])")),
+    ("NET·NEP", re.compile(r"(?<![A-Za-z.])NE[TP](?![A-Za-z])|신기술\s*인증|신제품\s*인증|신기술\(NET\)|신제품\(NEP\)")),
+    ("녹색인증", re.compile(r"녹색\s*인증|녹색기술|녹색제품|환경표지")),
+    ("GS인증", re.compile(r"GS\s*인증|굿소프트웨어")),
+    ("조달·공공구매", re.compile(r"조달|공공\s*구매|우선\s*구매|구매\s*상담|벤처나라|나라장터|다수공급자|SMPP|공공\s*판로")),
+]
+
+
+def procurement_tags(title: str) -> list[str]:
+    """공공조달 관련이면 분류 이름 목록, 아니면 빈 목록. 구체적인 분류가 있으면 '조달·공공구매'는 빼지 않고 같이 둔다."""
+    return [name for name, rx in PROC_RULES if rx.search(title or "")]
+
 
 def norm_title(title: str) -> str:
     """출처가 달라도 같은 공고를 알아보도록 앞머리 [기관] 표시와 기호·공백만 걷어낸 제목.
@@ -446,6 +462,11 @@ def merge(old_items: list[dict], new_items: list[dict], cfg: dict, today: date) 
         if any(x in it.get("title", "").lower() for x in excludes):
             continue
         it["matched"] = match_keywords(it, keywords)
+        proc = procurement_tags(it.get("title", ""))
+        if proc:
+            it["proc"] = proc
+        else:
+            it.pop("proc", None)
         result.append(it)
 
     result.sort(key=lambda x: (x.get("first_seen") or "", x.get("posted") or ""), reverse=True)
