@@ -48,6 +48,8 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const pad = (n) => String(n).padStart(2, "0");
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const todayStr = () => ymd(new Date());
+// 매일 하는 일(daily)은 체크한 날(doneOn)에만 완료. 다음 날이 되면 저절로 다시 할 일이 된다.
+const isDone = (t) => (t.daily ? t.doneOn === todayStr() : !!t.done);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 // "20261015", "2026-10-15", "2026.10.15" → "2026-10-15". 날짜가 아니면 null.
 function toIso(text) {
@@ -119,7 +121,7 @@ function openDashboard() {
   showTab(store.get("tab", "home"));
 }
 function renderHub() {
-  const todos = state.todos.filter((t) => !t.done).length;
+  const todos = state.todos.filter((t) => !isDone(t)).length;
   const works = state.works.filter((w) => !workProgress || workProgress(w) < 100).length;
   const fresh = state.notices.filter(isNew).length;
   $("#dashMeta").textContent = `할 일 ${todos} · 진행 중 업무 ${works} · 새 공고 ${fresh}`;
@@ -511,7 +513,7 @@ function workTodos(w) { return state.todos.filter((t) => t.workId === w.id); }
 function workProgress(w) {
   const ts = workTodos(w);
   if (!ts.length) return w.progress || 0;
-  return Math.round((ts.filter((t) => t.done).length / ts.length) * 100);
+  return Math.round((ts.filter(isDone).length / ts.length) * 100);
 }
 const workName = (id) => state.works.find((w) => w.id === id)?.title;
 
@@ -542,15 +544,16 @@ function renderWorks() {
         <div class="bar" role="progressbar" aria-valuenow="${pr}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pr}%"></i></div>
         <span class="pct">${done ? "완료" : pr + "%"}</span>
         ${auto
-          ? `<span class="work-count">할 일 ${ts.filter((t) => t.done).length}/${ts.length}</span>`
+          ? `<span class="work-count">할 일 ${ts.filter(isDone).length}/${ts.length}</span>`
           : `<button class="step" data-work-step="-10" data-id="${w.id}" aria-label="진행률 낮추기" ${pr <= 0 ? "disabled" : ""}>−</button>
              <button class="step" data-work-step="10" data-id="${w.id}" aria-label="진행률 올리기" ${done ? "disabled" : ""}>+</button>`}
       </div>
       <ul class="work-todos">
         ${ts.map((t) => `
-          <li class="todo ${t.done ? "done" : ""}">
-            <input type="checkbox" data-todo="${t.id}" ${t.done ? "checked" : ""} aria-label="완료">
-            ${t.due && !t.done ? ddayBadge(t.due) : ""}
+          <li class="todo ${isDone(t) ? "done" : ""}">
+            <input type="checkbox" data-todo="${t.id}" ${isDone(t) ? "checked" : ""} aria-label="완료">
+            ${t.daily ? `<span class="daily-chip" title="매일 하는 일">매일</span>` : ""}
+            ${t.due && !isDone(t) ? ddayBadge(t.due) : ""}
             <span class="grow">${esc(t.text)}</span>
           </li>`).join("")}
       </ul>
@@ -617,12 +620,14 @@ $("#workList").addEventListener("submit", (e) => {
 
 // ---------------------------------------------------------------- 할 일 / 메모
 
-// 체크해도 지우지 않고 줄만 긋는다. 순서는 추가한 순서 그대로.
+// 체크해도 지우지 않고 줄만 긋는다. 매일 하는 일이 위, 나머지는 추가한 순서 그대로.
 function todoListHTML() {
-  return state.todos.length ? state.todos.map((t) => `
-    <li class="todo ${t.done ? "done" : ""}">
-      <input type="checkbox" data-todo="${t.id}" ${t.done ? "checked" : ""} aria-label="완료">
-      ${t.due ? (t.done ? `<span class="meta due">${esc(t.due.replace(/-/g, "."))}</span>` : ddayBadge(t.due)) : ""}
+  const list = state.todos.filter((t) => t.daily).concat(state.todos.filter((t) => !t.daily));
+  return list.length ? list.map((t) => `
+    <li class="todo ${isDone(t) ? "done" : ""}">
+      <input type="checkbox" data-todo="${t.id}" ${isDone(t) ? "checked" : ""} aria-label="완료">
+      ${t.daily ? `<span class="daily-chip" title="매일 하는 일 · 다음 날 다시 체크할 수 있어요">매일</span>` : ""}
+      ${t.due ? (isDone(t) ? `<span class="meta due">${esc(t.due.replace(/-/g, "."))}</span>` : ddayBadge(t.due)) : ""}
       ${t.workId && workName(t.workId) ? `<span class="work-chip" title="연결된 업무">${esc(workName(t.workId))}</span>` : ""}
       <span class="grow">${esc(t.text)}</span>
       <button class="icon" data-todo-del="${t.id}" title="삭제">×</button>
@@ -631,18 +636,19 @@ function todoListHTML() {
 
 function toggleTodo(id) {
   const t = state.todos.find((x) => x.id === id);
-  if (t) t.done = !t.done;
+  if (t?.daily) t.doneOn = isDone(t) ? "" : todayStr();
+  else if (t) t.done = !t.done;
   store.set("todos", state.todos);
   renderAll();
 }
 
 function addTodoFrom(form) {
-  const due = readYmd(form.due, false);
-  if (due === undefined) return;
   const workId = form.work?.value || "";
-  state.todos.push({ id: uid(), text: form.text.value.trim(), due, done: false, ...(workId ? { workId } : {}) });
+  const daily = !!form.daily?.checked;
+  state.todos.push({ id: uid(), text: form.text.value.trim(), due: "", done: false,
+    ...(daily ? { daily: true, doneOn: "" } : {}), ...(workId ? { workId } : {}) });
   store.set("todos", state.todos);
-  form.text.value = ""; form.due.value = "";   // 고른 업무는 이어서 쓰도록 남겨 둔다
+  form.text.value = "";   // 고른 업무·'매일'은 이어서 쓰도록 남겨 둔다
   renderAll();
   form.text.focus();
 }
@@ -773,7 +779,7 @@ function pageContext() {
     .filter((e) => { const d = daysUntil(e.date); return d != null && d >= -1 && d <= 30; })
     .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")))
     .map((e) => `- ${e.date} ${e.time || "종일"} [${KINDS[e.kind]}] ${e.title}`);
-  const todos = state.todos.filter((t) => !t.done).map((t) => `- ${t.text}${t.due ? " (기한 " + t.due + ")" : ""}${t.workId && workName(t.workId) ? " [업무: " + workName(t.workId) + "]" : ""}`);
+  const todos = state.todos.filter((t) => !isDone(t)).map((t) => `- ${t.text}${t.daily ? " (매일)" : ""}${t.due ? " (기한 " + t.due + ")" : ""}${t.workId && workName(t.workId) ? " [업무: " + workName(t.workId) + "]" : ""}`);
   const notices = state.notices
     .filter((n) => { const d = daysUntil(n.end); return d == null || d >= 0; })
     .slice(0, 60)
@@ -829,16 +835,17 @@ const ASK_TOOLS = [
   },
   {
     name: "add_todo",
-    description: "할 일 목록에 항목을 추가한다. due는 YYYY-MM-DD 또는 빈 문자열.",
+    description: "할 일 목록에 항목을 추가한다. due는 YYYY-MM-DD 또는 빈 문자열. 매일 반복하는 일이면 daily=true.",
     inputSchema: {
       type: "object",
-      properties: { text: { type: "string" }, due: { type: "string" }, work: { type: "string", description: "연결할 진행 중인 업무 이름 (선택)" } },
+      properties: { text: { type: "string" }, due: { type: "string" }, daily: { type: "boolean" }, work: { type: "string", description: "연결할 진행 중인 업무 이름 (선택)" } },
       required: ["text"],
     },
     execute(input) {
       const due = /^\d{4}-\d{2}-\d{2}$/.test(String(input.due || "")) ? String(input.due) : "";
       const w = input.work ? state.works.find((x) => x.title.includes(String(input.work)) || String(input.work).includes(x.title)) : null;
-      const t = { id: uid(), text: String(input.text).slice(0, 200), due, done: false, ...(w ? { workId: w.id } : {}) };
+      const t = { id: uid(), text: String(input.text).slice(0, 200), due, done: false,
+        ...(input.daily ? { daily: true, doneOn: "" } : {}), ...(w ? { workId: w.id } : {}) };
       state.todos.push(t);
       store.set("todos", state.todos);
       renderAll();
@@ -1020,7 +1027,15 @@ async function loadWeather() {
 
 // ---------------------------------------------------------------- 시작
 
+// 날짜가 바뀐 뒤 다시 보면 '매일' 할 일의 체크를 풀어 다시 그린다
+let shownDay = todayStr();
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && todayStr() !== shownDay) renderAll();
+});
+setInterval(() => { if (todayStr() !== shownDay) renderAll(); }, 60000);
+
 function renderAll() {
+  shownDay = todayStr();
   renderHub();
   renderHome();
   renderCalendar();
